@@ -7,12 +7,14 @@ pip install -e .
 jupyter serverextension enable notebook_clone_extension
 ```
 
-Now `GET /user/USERNAME/clone?copy_from=/path/to/notebook` will copy the
+`GET /user/USERNAME/clone?copy_from=/path/to/notebook` will copy the
 notebook into `USERNAME`'s notebook server's root directory and redirect the user
 to JupyterLab's "single-document mode" view of the new copy of the notebook.
 
-If used in a Hub, `GET /hub/user-redirect/clone?copy_from=/path/to/notebook`
-will do the same for the currently-logged-in user.
+See also [this branch](https://github.com/danielballan/nbviewer/tree/copy-to-user-server)
+of nbviewer, which handles `?copy` query paramter (similar to the existing
+`?download` parameter) by redirecing to
+`GET /hub/user-redirect/clone?copy_from=/path/to/notebook`.
 
 ## Links use in development
 
