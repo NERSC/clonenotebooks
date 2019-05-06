@@ -16,7 +16,7 @@ of nbviewer, which handles `?copy` query paramter (similar to the existing
 `?download` parameter) by redirecing to
 `GET /hub/user-redirect/clone?copy_from=/path/to/notebook`.
 
-## Links use in development
+## Documentation useful in development
 
 * https://jupyterhub.readthedocs.io/en/stable/reference/urls.html?highlight=user-redirect#user-redirect
 * https://jupyter-notebook.readthedocs.io/en/stable/extending/handlers.html
