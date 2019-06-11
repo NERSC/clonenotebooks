@@ -2,12 +2,15 @@ from datetime import datetime
 import json
 import os.path
 from io import StringIO
+import re
+from urllib.parse import urlparse
+from urllib import robotparser
 
 from notebook.utils import url_path_join
 from notebook.base.handlers import IPythonHandler
 from notebook.services.contents.manager import copy_pat
 from tornado import web
-from tornado.escape import url_unescape
+from tornado.escape import url_unescape, url_escape
 from tornado import gen
 from tornado import httpclient
 
@@ -35,7 +38,7 @@ def load_jupyter_server_extension(nb_server_app):
             # non-file-based ContentManager implementation and (2) is able to
             # clone files from outside of ("above") the notebook server's root
             # directory.
-            clone_from = self.get_argument('clone_from')
+            clone_from = self.get_query_argument('clone_from')
             clone_to = "/"  # root directory of notebook server
             self.log.info("Cloning %s to %s", clone_from, clone_to)
             if not os.path.isfile(clone_from):
@@ -89,22 +92,19 @@ def load_jupyter_server_extension(nb_server_app):
             # non-file-based ContentManager implementation and (2) is able to
             # clone files from outside of ("above") the notebook server's root
             # directory.
-            clone_from = url_unescape(self.get_argument('clone_from'))
+            clone_from = url_unescape(self.get_query_argument('clone_from'))
             clone_to = "/"  # root directory of notebook server
             self.log.info("Cloning notebook on GitHub found at %s to %s", clone_from, clone_to)
 
-            clone_from = clone_from.split('/', 3)
+            clone_from = clone_from.split('/', 2)
             user = clone_from[0]
-            self.log.info("\nValue of user is: %s\n" % user)
             repo = clone_from[1]
-            self.log.info("\nValue of repo is: %s\n" % repo)
-            path = clone_from[2]
-            self.log.info("\nValue of path is: %s\n" % path)
-            ref  = clone_from[3]
-            self.log.info("\nValue of ref is: %s\n"  % ref)
-            
+            path_ref = clone_from[2]
+            path_ref = path_ref.rsplit('/', 1)
+            path = path_ref[0]
+            ref =  path_ref[1]
+ 
             with self.catch_client_error():
-                self.log.info("\nGot to with self.catch_client error -- does it fail here?\n")
                 tree_entry = yield self.github_client.get_tree_entry(
                     user, repo, path=url_unescape(path), ref=ref
                     )
@@ -150,10 +150,95 @@ def load_jupyter_server_extension(nb_server_app):
             # in JupyterLab's single-document mode.
             self.redirect(url_path_join('lab', 'tree', full_clone_to))
 
+    class URLCloneHandler(IPythonHandler):
+        client = httpclient.AsyncHTTPClient()
+
+        @gen.coroutine
+        def get(self):
+            # This is similar to notebook.contents.manager.ContentsManager.copy
+            # but it (1) assumes the clone_from is on the filesystem not some
+            # non-file-based ContentManager implementation and (2) is able to
+            # clone files from outside of ("above") the notebook server's root
+            # directory.
+            clone_from = url_unescape(self.get_query_argument('clone_from'))
+            try:
+                protocol = self.get_query_argument('protocol')
+            # Assume HTTPS and not HTTP by default:
+            except web.MissingArgumentError:
+                protocol = 'https'
+            clone_to = "/" # root directory of notebook server
+            self.log.info("Cloning notebook from URL: %s", clone_from)
+
+            clone_from = re.match(r'(?P<netloc>[^/]+)/(?P<url>.*)', clone_from)
+            netloc, url = clone_from.group('netloc', 'url')
+
+            url = url_escape(url, plus=False)
+
+            remote_url = u"{}://{}/{}".format(protocol, netloc, url)
+
+            if not url.endswith('.ipynb'):
+                # this is how we handle relative links (files/ URLs) in notebooks
+                # if it's not a .ipynb URL and it is a link from a notebook,
+                # redirect to the original URL rather than trying to render it as a notebook
+                self.log.info("No ipynb file found at address %s at %s", url, netloc)
+                refer_url = self.request.headers.get('Referer', '').split('://')[-1]
+                if refer_url.startswith(self.request.host + '/url'):
+                    self.redirect(remote_url)
+                    return
+
+            parse_result = urlparse(remote_url)
+            robots_url = parse_result.scheme + "://" + parse_result.netloc + "/robots.txt"
+ 
+            public = False # Assume non-public
+
+            try:
+                robots_response = yield self.client.fetch(robots_url)
+                robotstxt = response_text(robots_response)
+                rfp = robotparser.RobotFileParser()
+                rfp.set_url(robots_url)
+                rfp.parse(robotstxt.splitlines())
+                public = rfp.can_fetch('*', remote_url)
+            except httpclient.HTTPError as e:
+                self.log.debug("Robots.txt not available for {}".format(remote_url),
+                        exc_info=True)
+                public = True
+            except Exception as e:
+                self.log.error(e)
+
+            response = yield self.client.fetch(remote_url)
+            self.log.info("\nrespose is: %s\n", response)
+
+            try:
+                nbjson = response_text(response, encoding='utf-8')
+            except UnicodeDecodeError:
+                self.log.error("Notebook is not utf8: %s", remote_url, exc_info=True)
+                raise web.HTTPError(400)
+            
+            nbjson = json.load(StringIO(nbjson))
+ 
+            now = datetime.now()
+            model = {
+                'content': nbjson,
+                'created': now,
+                'format': 'json',
+                'last_modified': now,
+                'mimetype': None,
+                'type': 'notebook',
+                'writable': True}
+            name = copy_pat.sub(u'.', os.path.basename(url))
+            to_name = contents_manager.increment_filename(name, clone_to, insert='-Copy')
+            full_clone_to = u'{0}/{1}'.format(clone_to, to_name)
+            contents_manager.save(model, full_clone_to)
+            # Redirect to the cloned notebook
+            # in JupyterLab's single-document mode.
+            self.redirect(url_path_join('lab', 'tree', full_clone_to))
 
     host_pattern = '.*$'
-    local_route_pattern  = url_path_join(web_app.settings['base_url'], '/local_clone')
-    github_route_pattern = url_path_join(web_app.settings['base_url'], '/github_clone')
+    base_url = web_app.settings['base_url']
+    local_route_pattern  = url_path_join(base_url, '/local_clone')
+    github_route_pattern = url_path_join(base_url, '/github_clone')
+    url_route_pattern    = url_path_join(base_url, '/url_clone')
 
     web_app.add_handlers(host_pattern, [(local_route_pattern, LocalCloneHandler),
-                                        (github_route_pattern, GitHubCloneHandler)])
+                                        (github_route_pattern, GitHubCloneHandler),
+                                        (url_route_pattern, URLCloneHandler)])
