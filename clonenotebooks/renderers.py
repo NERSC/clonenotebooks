@@ -1,13 +1,18 @@
+import os
+import mimetypes
+import json
+
 from nbviewer.providers.base import cached
-from nbviewer.utils import response_text, quote
+from nbviewer.utils import response_text, quote, base64_decode
 from nbviewer.providers.url.handlers import URLHandler
+from nbviewer.providers.github.handlers import GitHubBlobHandler
 
 from urllib.parse import urlparse
 from urllib import robotparser
 
 from tornado import gen, httpclient, web
 from tornado.log import app_log
-from tornado.escape import url_unescape
+from tornado.escape import url_unescape, url_escape
 
 class URLRenderingHandler(URLHandler):
     """Renderer for /url or /urls"""
@@ -89,4 +94,130 @@ class URLRenderingHandler(URLHandler):
                                    msg="file from url: %s" % remote_url,
                                    public=public,
                                    request=self.request,
-                                   format=self.format)
+                                   format=self.format) 
+
+class GitHubBlobRenderingHandler(GitHubBlobHandler):
+    """handler for files on github
+    If it's a...
+    - notebook, render it
+    - non-notebook file, serve file unmodified
+    - directory, redirect to tree
+    """
+    PROVIDER_CTX = {
+        'provider_label': 'GitHub',
+        'provider_icon': 'github',
+        'executor_label': 'Binder',
+        'executor_icon': 'icon-binder',
+    }
+
+    
+    BINDER_TMPL = '{binder_base_url}/gh/{org}/{repo}/{ref}'
+    BINDER_PATH_TMPL = BINDER_TMPL+'?filepath={path}'
+
+
+    def _github_url(self):
+        return os.environ.get('GITHUB_URL') if os.environ.get('GITHUB_URL', '') else "https://github.com/"
+
+    @gen.coroutine
+    def clone_to_user_server(self, user, repo, path, ref):
+        """Clone a notebook on GitHub to the user's home directory.
+        Parameters
+        ==========
+        user, repo, path, ref: str
+          Used to create the URI nbviewer uses to specify the notebook on GitHub.
+        """
+        app_log.info("\nWe are in clone_to_user_server! yay!\n")
+        fullpath = [user, repo, path, ref]
+        app_log.info("\n value of fullpath before joining is: %s\n" % fullpath)
+        fullpath = url_escape("/".join(fullpath))
+        app_log.info("\n value of fullpath after joining is: %s\n" % fullpath)
+        self.redirect('/user-redirect/github_clone?clone_from=%s' % fullpath)
+
+    @cached
+    @gen.coroutine
+    def get(self, user, repo, ref, path):
+        if path.endswith('.ipynb') and self.clone_notebooks:
+            app_log.info("\nPath ends with ipynb and clone notebooks is true\n")
+            is_clone = self.get_query_arguments('clone')
+            app_log.info("\nValue of 'is_clone' is: %s \n" % is_clone)
+            if is_clone:
+                app_log.info("\nIs_clone is true!\n")
+                self.clone_to_user_server(user, repo, path, ref)
+                return
+
+        raw_url = u"https://raw.githubusercontent.com/{user}/{repo}/{ref}/{path}".format(
+            user=user, repo=repo, ref=ref, path=quote(path)
+        )
+        blob_url = u"{github_url}{user}/{repo}/blob/{ref}/{path}".format(
+            user=user, repo=repo, ref=ref, path=quote(path), github_url=self._github_url()
+        )
+        with self.catch_client_error():
+            tree_entry = yield self.github_client.get_tree_entry(
+                user, repo, path=url_unescape(path), ref=ref
+            )
+
+        if tree_entry['type'] == 'tree':
+            tree_url = "/github/{user}/{repo}/tree/{ref}/{path}/".format(
+                user=user, repo=repo, ref=ref, path=quote(path),
+            )
+            app_log.info("%s is a directory, redirecting to %s", self.request.path, tree_url)
+            self.redirect(tree_url)
+            return
+
+        # fetch file data from the blobs API
+        with self.catch_client_error():
+            response = yield self.github_client.fetch(tree_entry['url'])
+
+        data = json.loads(response_text(response))
+        contents = data['content']
+        if data['encoding'] == 'base64':
+            # filedata will be bytes
+            filedata = base64_decode(contents)
+        else:
+            # filedata will be unicode
+            filedata = contents
+
+        if path.endswith('.ipynb'):
+            dir_path = path.rsplit('/', 1)[0]
+            base_url = "/github/{user}/{repo}/tree/{ref}".format(
+                user=user, repo=repo, ref=ref,
+            )
+            breadcrumbs = [{
+                'url' : base_url,
+                'name' : repo,
+            }]
+            breadcrumbs.extend(self.breadcrumbs(dir_path, base_url))
+
+            # Enable a binder navbar icon if a binder base URL is configured
+            executor_url = self.BINDER_PATH_TMPL.format(
+                binder_base_url=self.binder_base_url,
+                org=user,
+                repo=repo,
+                ref=ref,
+                path=quote(path)
+            ) if self.binder_base_url else None
+
+            try:
+                # filedata may be bytes, but we need text
+                if isinstance(filedata, bytes):
+                    nbjson = filedata.decode('utf-8')
+                else:
+                    nbjson = filedata
+            except Exception as e:
+                app_log.error("Failed to decode notebook: %s", raw_url, exc_info=True)
+                raise web.HTTPError(400)
+
+            yield self.finish_notebook(nbjson, raw_url,
+                provider_url=blob_url,
+                executor_url=executor_url,
+                breadcrumbs=breadcrumbs,
+                msg="file from GitHub: %s" % raw_url,
+                public=True,
+                format=self.format,
+                request=self.request,
+                **self.PROVIDER_CTX
+            )
+        else:
+            mime, enc = mimetypes.guess_type(path)
+            self.set_header("Content-Type", mime or 'text/plain')
+            self.cache_and_finish(filedata)
