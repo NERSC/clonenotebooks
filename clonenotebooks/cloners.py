@@ -94,7 +94,10 @@ def load_jupyter_server_extension(nb_server_app):
                 raise web.HTTPError(400)
             
             nbjson = json.load(StringIO(nbjson))
- 
+
+            # Need to unescape the URL so we get the right file name when redirecting, e.g. for the Julia notebook in the nbviewer gallery 
+            url = url_unescape(url)
+
             now = datetime.now()
             model = {
                 'content': nbjson,
