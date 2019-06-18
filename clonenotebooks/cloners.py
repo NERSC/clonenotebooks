@@ -204,11 +204,44 @@ def load_jupyter_server_extension(nb_server_app):
             # in JupyterLab's single-document mode.
             self.redirect(url_path_join('lab', 'tree', full_clone_to))
 
+    class LocalCloneHandler(IPythonHandler):
+        def get(self):
+            # This is similar to notebook.contents.manager.ContentsManager.copy
+            # but it (1) assumes the clone_from is on the filesystem not some
+            # non-file-based ContentManager implementation and (2) is able to
+            # clone files from outside of ("above") the notebook server's root
+            # directory.
+            clone_from = self.get_query_argument('clone_from')
+            clone_to = "/"  # root directory of notebook server
+            self.log.info("Cloning %s to %s", clone_from, clone_to)
+            if not os.path.isfile(clone_from):
+                raise web.HTTPError(400, "No such file: %s" % clone_from)
+            with open(clone_from, 'r') as f:
+                nbjson = json.load(f)
+            now = datetime.now()
+            model = {
+                'content': nbjson,
+                'created': now,
+                'format': 'json',
+                'last_modified': now,
+                'mimetype': None,
+                'type': 'notebook',
+                'writable': True}
+            name = copy_pat.sub(u'.', os.path.basename(clone_from))
+            to_name = contents_manager.increment_filename(name, clone_to, insert='-Copy')
+            full_clone_to = u'{0}/{1}'.format(clone_to, to_name)
+            contents_manager.save(model, full_clone_to)
+            # Redirect to the cloned notebook
+            # in JupyterLab's single-document mode.
+            self.redirect(url_path_join('lab', 'tree', full_clone_to))
+
 
     host_pattern = '.*$'
     base_url = web_app.settings['base_url']
     url_route_pattern    = url_path_join(base_url, '/url_clone')
     github_route_pattern = url_path_join(base_url, '/github_clone')
+    local_route_pattern  = url_path_join(base_url, '/local_clone')
 
     web_app.add_handlers(host_pattern, [(url_route_pattern, URLCloneHandler),
-                                        (github_route_pattern, GitHubCloneHandler)])
+                                        (github_route_pattern, GitHubCloneHandler),
+                                        (local_route_pattern, LocalCloneHandler)])
