@@ -3,6 +3,7 @@ import mimetypes
 import io
 import json
 import errno
+import re
 from datetime import datetime
 
 from nbviewer.providers.base import cached
@@ -10,6 +11,7 @@ from nbviewer.utils import response_text, quote, base64_decode, url_path_join
 from nbviewer.providers.url.handlers import URLHandler
 from nbviewer.providers.github.handlers import GitHubBlobHandler
 from nbviewer.providers.local.handlers import LocalFileHandler
+from nbviewer.providers.gist.handlers import GistHandler
 
 from urllib.parse import urlparse
 from urllib import robotparser
@@ -20,6 +22,31 @@ from tornado.escape import url_unescape, url_escape
 
 class URLRenderingHandler(URLHandler):
     """Renderer for /url or /urls"""
+
+    def render_notebook_template(self, body, nb, download_url,
+#            provider_url, provider_label, provider_icon,
+#            executor_url, executor_label, executor_icon,
+            json_notebook, #breadcrumbs, title, 
+            **namespace):
+
+        return super().render_notebook_template(body, nb, download_url, json_notebook,
+                                                clone_notebooks=self.clone_notebooks,
+                                                **namespace)
+
+#        return self.render_template(
+#            "formats/%s.html" % self.format,
+#            body=body,
+#            nb=nb,
+#            download_url=download_url,
+#            format=self.format,
+#            default_format=self.default_format,
+#            format_prefix=self.format_prefix,
+#            formats=dict(self.filter_formats(nb, json_notebook)),
+#            format_base=self.request.uri.replace(self.format_prefix, "").replace(self.base_url, '/'),
+#            date=datetime.utcnow().strftime(self.date_fmt),
+#            clone_notebooks=self.clone_notebooks,
+            #**config
+#            )
 
     @gen.coroutine
     def clone_to_user_server(self, url, protocol='https'):
@@ -97,8 +124,7 @@ class URLRenderingHandler(URLHandler):
         yield self.finish_notebook(nbjson, download_url=remote_url,
                                    msg="file from url: %s" % remote_url,
                                    public=public,
-                                   request=self.request,
-                                   format=self.format) 
+                                   request=self.request)
 
 class GitHubBlobRenderingHandler(GitHubBlobHandler):
     """handler for files on github
@@ -107,23 +133,50 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
     - non-notebook file, serve file unmodified
     - directory, redirect to tree
     """
-    PROVIDER_CTX = {
-        'provider_label': 'GitHub',
-        'provider_icon': 'github',
-        'executor_label': 'Binder',
-        'executor_icon': 'icon-binder',
-    }
+    def render_notebook_template(self, body, nb, download_url,
+#            provider_url, provider_label, provider_icon,
+#            executor_url, executor_label, executor_icon,
+            json_notebook, #breadcrumbs, title, 
+            **namespace):
 
-    
-    BINDER_TMPL = '{binder_base_url}/gh/{org}/{repo}/{ref}'
-    BINDER_PATH_TMPL = BINDER_TMPL+'?filepath={path}'
+        return super().render_notebook_template(body, nb, download_url, json_notebook,
+#                                                provider_url=namespace['provider_url'],
+#                                                provider_label=namespace['provider_label'],
+#                                                provider_icon=namespace['provider_icon'],
+#                                                executor_url=namespace['executor_url'],
+#                                                executor_label=namespace['executor_label'],
+#                                                executor_icon=namespace['executor_icon'],
+#                                                breadcrumbs=namespace['breadcrumbs'],
+                                                clone_notebooks=self.clone_notebooks,
+                                                **namespace)
 
+#        return self.render_template(
+#            "formats/%s.html" % self.format,
+#            body=body,
+#            nb=nb,
+#            download_url=download_url,
+#            provider_url=namespace['provider_url'],
+#            provider_label=namespace['provider_label'],
+#            provider_icon=namespace['provider_icon'],
+#            executor_url=namespace['executor_url'],
+#            executor_label=namespace['executor_label'],
+#            executor_icon=namespace['executor_icon'],
+#            format=self.format,
+#            default_format=self.default_format,
+#            format_prefix=self.format_prefix,
+#            formats=dict(self.filter_formats(nb, json_notebook)),
+#            format_base=self.request.uri.replace(self.format_prefix, "").replace(self.base_url, '/'),
+#            date=datetime.utcnow().strftime(self.date_fmt),
+#            breadcrumbs=namespace['breadcrumbs'],
+#            clone_notebooks=self.clone_notebooks,
+#            **config
+#            )
 
     def _github_url(self):
         return os.environ.get('GITHUB_URL') if os.environ.get('GITHUB_URL', '') else "https://github.com/"
 
     @gen.coroutine
-    def clone_to_user_server(self, user, repo, path, ref):
+    def clone_to_user_server(self, raw_url):
         """Clone a notebook on GitHub to the user's home directory.
         Parameters
         ==========
@@ -131,23 +184,24 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
           Used to create the URI nbviewer uses to specify the notebook on GitHub.
         """
         app_log.info("\nWe are in clone_to_user_server! yay!\n")
-        fullpath = [user, repo, path, ref]
-        app_log.info("\n value of fullpath before joining is: %s\n" % fullpath)
-        fullpath = url_escape("/".join(fullpath))
-        app_log.info("\n value of fullpath after joining is: %s\n" % fullpath)
-        self.redirect('/user-redirect/github_clone?clone_from=%s' % fullpath)
+        #fullpath = [user, repo, path, ref]
+        #app_log.info("\n value of fullpath before joining is: %s\n" % fullpath)
+        #fullpath = url_escape("/".join(fullpath))
+        #app_log.info("\n value of fullpath after joining is: %s\n" % fullpath)
+        #self.redirect('/user-redirect/github_clone?clone_from=%s' % fullpath)
+        self.redirect('/user-redirect/github_clone?clone_from=%s' % raw_url)
 
     @cached
     @gen.coroutine
     def get(self, user, repo, ref, path):
-        if path.endswith('.ipynb') and self.clone_notebooks:
-            app_log.info("\nPath ends with ipynb and clone notebooks is true\n")
-            is_clone = self.get_query_arguments('clone')
-            app_log.info("\nValue of 'is_clone' is: %s \n" % is_clone)
-            if is_clone:
-                app_log.info("\nIs_clone is true!\n")
-                self.clone_to_user_server(user, repo, path, ref)
-                return
+#        if path.endswith('.ipynb') and self.clone_notebooks:
+#            app_log.info("\nPath ends with ipynb and clone notebooks is true\n")
+#            is_clone = self.get_query_arguments('clone')
+#            app_log.info("\nValue of 'is_clone' is: %s \n" % is_clone)
+#            if is_clone:
+#                app_log.info("\nIs_clone is true!\n")
+#                self.clone_to_user_server(user, repo, path, ref)
+#                return
 
         raw_url = u"https://raw.githubusercontent.com/{user}/{repo}/{ref}/{path}".format(
             user=user, repo=repo, ref=ref, path=quote(path)
@@ -181,6 +235,20 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
             # filedata will be unicode
             filedata = contents
 
+        if path.endswith('.ipynb') and self.clone_notebooks:
+            app_log.info("\nPath ends with ipynb and clone notebooks is true\n")
+            is_clone = self.get_query_arguments('clone')
+            app_log.info("\nValue of 'is_clone' is: %s \n" % is_clone)
+            if is_clone:
+                app_log.info("\nIs_clone is true!\n")
+
+                app_log.info("raw_url: %s" % raw_url)
+                truncated_url = re.match(r'^https?://(?P<truncated_url>.*)', raw_url).group('truncated_url')
+                app_log.info("truncated_url: %s" % truncated_url)
+
+                self.clone_to_user_server(truncated_url)
+                return
+
         if path.endswith('.ipynb'):
             dir_path = path.rsplit('/', 1)[0]
             base_url = "/github/{user}/{repo}/tree/{ref}".format(
@@ -212,13 +280,15 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
                 raise web.HTTPError(400)
 
             yield self.finish_notebook(nbjson, raw_url,
+                msg="file from Github: %s" % raw_url,
+                public=True,
+                request=self.request,
                 provider_url=blob_url,
                 executor_url=executor_url,
                 breadcrumbs=breadcrumbs,
-                msg="file from GitHub: %s" % raw_url,
-                public=True,
-                format=self.format,
-                request=self.request,
+#                msg="file from GitHub: %s" % raw_url,
+#                public=True,
+#                request=self.request,
                 **self.PROVIDER_CTX
             )
         else:
@@ -226,7 +296,45 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
             self.set_header("Content-Type", mime or 'text/plain')
             self.cache_and_finish(filedata)
 
+        # if path.endswith('.ipynb') and self.clone_notebooks:
+        #     app_log.info("\nPath ends with ipynb and clone notebooks is true\n")
+        #     is_clone = self.get_query_arguments('clone')
+        #     app_log.info("\nValue of 'is_clone' is: %s \n" % is_clone)
+        #     if is_clone:
+        #         app_log.info("\nIs_clone is true!\n")
+        #         self.clone_to_user_server(raw_url)
+        #         return
+
 class LocalRenderingHandler(LocalFileHandler):
+    def render_notebook_template(self, body, nb, download_url,
+#            provider_url, provider_label, provider_icon,
+#            executor_url, executor_label, executor_icon,
+            json_notebook, #breadcrumbs, title, 
+            **namespace):
+
+        return super().render_notebook_template(body, nb, download_url, json_notebook,
+#                                                breadcrumbs=namespace['breadcrumbs'],
+#                                                title=namespace['title'],
+                                                clone_notebooks=self.clone_notebooks,
+                                                **namespace)
+
+#        return self.render_template(
+#            "formats/%s.html" % self.format,
+#            body=body,
+#            nb=nb,
+#            download_url=download_url,
+#            format=self.format,
+#            default_format=self.default_format,
+#            format_prefix=self.format_prefix,
+#            formats=dict(self.filter_formats(nb, json_notebook)),
+#            format_base=self.request.uri.replace(self.format_prefix, "").replace(self.base_url, '/'),
+#            date=datetime.utcnow().strftime(self.date_fmt),
+#            breadcrumbs=namespace['breadcrumbs'],
+#            title=namespace['title'],
+#            clone_notebooks=self.clone_notebooks,
+            #**config
+#            )
+
     @gen.coroutine
     def clone_to_user_server(self, fullpath):
         """Clone the file at the given absolute path to the user's home directory.
@@ -289,7 +397,6 @@ class LocalRenderingHandler(LocalFileHandler):
                                    download_url='?download',
                                    msg="file from localfile: %s" % path,
                                    public=False,
-                                   format=self.format,
                                    request=self.request,
                                    breadcrumbs=self.breadcrumbs(path),
                                    title=os.path.basename(path))
@@ -360,3 +467,150 @@ class LocalRenderingHandler(LocalFileHandler):
                                     title=url_path_join(path, '/'),
                                     clone_notebooks=self.clone_notebooks) 
         return html
+
+class GistRenderingHandler(GistHandler):
+    def render_notebook_template(self, body, nb, download_url, json_notebook, **namespace):
+
+        return super().render_notebook_template(body, nb, download_url, json_notebook,
+                                                clone_notebooks=self.clone_notebooks,
+                                                **namespace)
+
+    @gen.coroutine
+    def clone_to_user_server(self, url):
+        self.redirect('/user-redirect/gist_clone?clone_from=%s' % url)
+
+    @cached
+    @gen.coroutine
+    def get(self, user, gist_id, filename=''):
+
+        with self.catch_client_error():
+            response = yield self.github_client.get_gist(gist_id)
+
+        gist = json.loads(response_text(response))
+
+        gist_id=gist['id']
+
+        if user is None:
+            # redirect to /gist/user/gist_id if no user given
+            owner_dict = gist.get('owner', {})
+            if owner_dict:
+                user = owner_dict['login']
+            else:
+                user = 'anonymous'
+            new_url = u"{format}/gist/{user}/{gist_id}".format(
+                format=self.format_prefix, user=user, gist_id=gist_id)
+            if filename:
+                new_url = new_url + "/" + filename
+            self.redirect(self.from_base(new_url))
+            return
+
+        files = gist['files']
+
+        many_files_gist = (len(files) > 1)
+
+        if not many_files_gist and not filename:
+            filename = list(files.keys())[0]
+
+        if filename and filename in files:
+            file = files[filename]
+            if (file['type'] or '').startswith('image/'):
+                app_log.debug("Fetching raw image (%s) %s/%s: %s", file['type'], gist_id, filename, file['raw_url'])
+                response = yield self.fetch(file['raw_url'])
+                # use raw bytes for images:
+                content = response.body
+            elif file['truncated']:
+                app_log.debug("Gist %s/%s truncated, fetching %s", gist_id, filename, file['raw_url'])
+                response = yield self.fetch(file['raw_url'])
+                content = response_text(response, encoding='utf-8')
+            else:
+                content = file['content']
+
+            # Enable a binder navbar icon if a binder base URL is configured
+            executor_url = self.BINDER_PATH_TMPL.format(
+                binder_base_url=self.binder_base_url,
+                user=user.rstrip('/'),
+                gist_id=gist_id,
+                path=quote(filename)
+            ) if self.binder_base_url else None
+
+            if not many_files_gist or filename.endswith('.ipynb'):
+
+                app_log.info(file['raw_url'])
+
+                if self.clone_notebooks:
+                    is_clone = self.get_query_arguments('clone')
+                    if is_clone:
+                        raw_url = file['raw_url']
+                        app_log.info("raw_url: %s" % raw_url)
+                        truncated_url = re.match(r'^https?://(?P<truncated_url>.*)', raw_url).group('truncated_url')
+                        app_log.info("truncated_url: %s" % truncated_url)
+
+                        self.clone_to_user_server(truncated_url)
+                        return
+
+                yield self.finish_notebook(
+                    content,
+                    file['raw_url'],
+                    msg="gist: %s" % gist_id,
+                    public=gist['public'],
+                    request=self.request,
+                    provider_url=gist['html_url'],
+                    executor_url=executor_url,
+#                    msg="gist: %s" % gist_id,
+#                    public=gist['public'],
+#                    format=self.format,
+#                    request=self.request,
+                    **self.PROVIDER_CTX
+                )
+            else:
+                self.set_header('Content-Type', file.get('type') or 'text/plain')
+                # cannot redirect because of X-Frame-Content
+                self.finish(content)
+                return
+
+        elif filename:
+            raise web.HTTPError(404, "No such file in gist: %s (%s)", filename, list(files.keys()))
+        else:
+            entries = []
+            ipynbs = []
+            others = []
+
+            for file in files.values():
+                e = {}
+                e['name'] = file['filename']
+                if file['filename'].endswith('.ipynb'):
+                    e['url'] = quote('/%s/%s' % (gist_id, file['filename']))
+                    e['class'] = 'fa-book'
+                    ipynbs.append(e)
+                else:
+                    provider_url = u"https://gist.github.com/{user}/{gist_id}#file-{clean_name}".format(
+                        user=user,
+                        gist_id=gist_id,
+                        clean_name=clean_filename(file['filename']),
+                    )
+                    e['url'] = provider_url
+                    e['class'] = 'fa-share'
+                    others.append(e)
+
+            entries.extend(ipynbs)
+            entries.extend(others)
+
+            # Enable a binder navbar icon if a binder base URL is configured
+            executor_url = self.BINDER_TMPL.format(
+                binder_base_url=self.binder_base_url,
+                user=user.rstrip('/'),
+                gist_id=gist_id
+            ) if self.binder_base_url else None
+
+            html = self.render_template(
+                'treelist.html',
+                entries=entries,
+                tree_type='gist',
+                tree_label='gists',
+                user=user.rstrip('/'),
+                provider_url=gist['html_url'],
+                executor_url=executor_url,
+                **self.PROVIDER_CTX
+            )
+            yield self.cache_and_finish(html)
+
