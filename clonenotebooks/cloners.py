@@ -32,7 +32,10 @@ def load_jupyter_server_extension(nb_server_app):
     contents_manager = nb_server_app.contents_manager
 
     # class CloneHandler(IPythonHandler):
-
+    # or what about
+    # class CloneMixIn(IPythonHanddler):
+    # instead? then we could have these inhereit from the rendering handlers
+    # and just super() their copy-pasted code
 
 
     # This class is defined in line so it can close over contents_manager.
