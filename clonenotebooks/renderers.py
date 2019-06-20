@@ -1,24 +1,12 @@
-import os
-import mimetypes
-import io
-import json
-import errno
 import re
-from datetime import datetime
 
 from nbviewer.providers.base import cached
-from nbviewer.utils import response_text, quote, base64_decode, url_path_join
 from nbviewer.providers.url.handlers import URLHandler
 from nbviewer.providers.github.handlers import GitHubBlobHandler
 from nbviewer.providers.local.handlers import LocalFileHandler
 from nbviewer.providers.gist.handlers import GistHandler
 
-from urllib.parse import urlparse
-from urllib import robotparser
-
-from tornado import gen, httpclient, web
-from tornado.log import app_log
-from tornado.escape import url_unescape, url_escape
+from tornado import gen
 
 
 
@@ -29,7 +17,7 @@ class URLRenderingHandler(URLHandler):
             json_notebook, **namespace):
 
         return super().render_notebook_template(body, nb, download_url, json_notebook,
-                                                clone_notebooks=self.clone_notebooks,
+                                                clone_notebooks=getattr(self, 'clone_notebooks', False),
                                                 **namespace)
 
     @gen.coroutine
@@ -48,7 +36,7 @@ class URLRenderingHandler(URLHandler):
 
         remote_url, public = yield super().format_notebook_request(secure, netloc, url)
 
-        if self.clone_notebooks:
+        if getattr(self, 'clone_notebooks', False):
             is_clone = self.get_query_arguments('clone')
             if is_clone:
                 destination = netloc + '/' + url
@@ -70,7 +58,7 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
                                        **namespace):
 
         return super().render_notebook_template(body, nb, download_url, json_notebook,
-                                                clone_notebooks=self.clone_notebooks,
+                                                clone_notebooks=getattr(self, 'clone_notebooks', False),
                                                 **namespace)
 
     @gen.coroutine
@@ -81,7 +69,6 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
         user, repo, path, ref: str
           Used to create the URI nbviewer uses to specify the notebook on GitHub.
         """
-        app_log.info("\nWe are in clone_to_user_server! yay!\n")
         self.redirect('/user-redirect/github_clone?clone_from=%s' % raw_url)
 
     @cached
@@ -89,7 +76,7 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
     def get(self, user, repo, ref, path):
         raw_url, blob_url, tree_entry = yield super().format_notebook_request(user, repo, ref, path)
 
-        if path.endswith('.ipynb') and self.clone_notebooks:
+        if path.endswith('.ipynb') and getattr(self, 'clone_notebooks', False):
             is_clone = self.get_query_arguments('clone')
             if is_clone:
                 truncated_url = re.match(r'^https?://(?P<truncated_url>.*)', raw_url).group('truncated_url')
@@ -105,13 +92,13 @@ class LocalRenderingHandler(LocalFileHandler):
             json_notebook, **namespace):
 
         return super().render_notebook_template(body, nb, download_url, json_notebook,
-                                                clone_notebooks=self.clone_notebooks,
+                                                clone_notebooks=getattr(self, 'clone_notebooks', False),
                                                 **namespace)
 
     def render_dirview_template(self, entries, breadcrumbs, title, **namespace):
 
         return super().render_dirview_template(entries, breadcrumbs, title,
-                                               clone_notebooks=self.clone_notebooks,
+                                               clone_notebooks=getattr(self, 'clone_notebooks', False),
                                                **namespace)
 
     @gen.coroutine
@@ -129,7 +116,7 @@ class LocalRenderingHandler(LocalFileHandler):
     def get(self, path):
         fullpath = super().format_notebook_request(path)
 
-        if self.clone_notebooks:
+        if getattr(self, 'clone_notebooks', False):
             is_clone = self.get_query_arguments('clone')
             if is_clone:
                 self.clone_to_user_server(fullpath)
@@ -143,7 +130,7 @@ class GistRenderingHandler(GistHandler):
     def render_notebook_template(self, body, nb, download_url, json_notebook, **namespace):
 
         return super().render_notebook_template(body, nb, download_url, json_notebook,
-                                                clone_notebooks=self.clone_notebooks,
+                                                clone_notebooks=getattr(self, 'clone_notebooks', False),
                                                 **namespace)
 
     @gen.coroutine
@@ -157,7 +144,7 @@ class GistRenderingHandler(GistHandler):
         if not content:
             return
 
-        if self.clone_notebooks:
+        if getattr(self, 'clone_notebooks', False):
             is_clone = self.get_query_arguments('clone')
             if is_clone:
                 raw_url = file['raw_url']
