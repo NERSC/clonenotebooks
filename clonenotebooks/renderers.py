@@ -3,6 +3,7 @@ import re
 from nbviewer.providers.base import cached
 from nbviewer.providers.url.handlers import URLHandler
 from nbviewer.providers.github.handlers import GitHubBlobHandler
+from nbviewer.providers.github.handlers import GitHubTreeHandler
 from nbviewer.providers.local.handlers import LocalFileHandler
 from nbviewer.providers.gist.handlers import GistHandler
 
@@ -85,7 +86,11 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
 
         yield super().load_notebook(user, repo, ref, path, raw_url, blob_url, tree_entry)
 
-
+class GitHubTreeRenderingHandler(GitHubTreeHandler):
+    def render_treelist_template(self, entries, breadcrumbs, provider_url, user, repo, ref, path,
+                                 branches, tags, executor_url, **namespace):
+        return super().render_treelist_template(entries, breadcrumbs, provider_url, user, repo, ref,
+                       path, branches, tags, executor_url, clone_notebooks=getattr(self, 'clone_notebooks', False), **namespace)
 
 class LocalRenderingHandler(LocalFileHandler):
     def render_notebook_template(self, body, nb, download_url,
