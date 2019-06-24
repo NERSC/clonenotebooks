@@ -6,6 +6,7 @@ from nbviewer.providers.github.handlers import GitHubBlobHandler
 from nbviewer.providers.github.handlers import GitHubTreeHandler
 from nbviewer.providers.local.handlers import LocalFileHandler
 from nbviewer.providers.gist.handlers import GistHandler
+from nbviewer.providers.gist.handlers import UserGistsHandler
 
 from tornado import gen
 
@@ -159,3 +160,9 @@ class GistRenderingHandler(GistHandler):
 
         yield super().load_notebook(user, gist_id, filename, gist, file, content)
 
+class UserGistsRenderingHandler(UserGistsHandler):
+    def render_usergists_template(self, entries, user, provider_url, prev_url, next_url, **namespace):
+
+        return super().render_usergists_template(entries, user, provider_url, prev_url, next_url, 
+                                                 clone_notebooks=getattr(self, 'clone_notebooks', False),
+                                                 **namespace)
