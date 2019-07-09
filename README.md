@@ -25,7 +25,7 @@ to run.
 The easiest and quickest way to get a version of this up and running
 to test out would be to use the Docker image and setup instructions
 found
-[here](https://github.com/krinsman/jupyterhub-deploy/tree/master/cloneviewer).
+[here](https://github.com/krinsman/jupyterhub-deploy/tree/master/nbviewer/cloneviewer).
 
 Otherwise install [my fork of NBViewer](https://github.com/krinsman/nbviewer) using the same installation
 instructions as for the master version, in particular the setup
@@ -70,8 +70,8 @@ necessary) with the lines:
 A copy of this file is also included in this repository. Ideally this
 should have everything configured, but these setup instructions are more
 vague than they could be. I recommend comparing with the Dockerfiles in my
-[example setup](https://github.com/krinsman/jupyterhub-deploy/tree/master/cloneviewer)
+[example setup](https://github.com/krinsman/jupyterhub-deploy/tree/master/nbviewer/cloneviewer)
 if any difficulties arise, and giving me feedback about any ways in
 which the documentation could be improved, since it will be much
-appreciated. [Here is a link to the issues page](https://github.com/krinsman/notebook-clone-extension/issues)
+appreciated. [Here is a link to the issues page](https://github.com/krinsman/clonenotebooks/issues)
 for requests for improved documentation and/or general feedback.
