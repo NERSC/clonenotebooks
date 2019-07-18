@@ -36,7 +36,7 @@ class URLRenderingHandler(URLHandler):
     @gen.coroutine
     def get(self, secure, netloc, url):
 
-        remote_url, public = yield super().format_notebook_request(secure, netloc, url)
+        remote_url, public = yield super().get_notebook_data(secure, netloc, url)
 
         if getattr(self, 'clone_notebooks', False):
             is_clone = self.get_query_arguments('clone')
@@ -45,7 +45,7 @@ class URLRenderingHandler(URLHandler):
                 self.clone_to_user_server(url=destination, protocol='http'+secure)
                 return
 
-        yield super().load_notebook(remote_url, public)
+        yield super().deliver_notebook(remote_url, public)
 
 
 
@@ -76,7 +76,7 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
     @cached
     @gen.coroutine
     def get(self, user, repo, ref, path):
-        raw_url, blob_url, tree_entry = yield super().format_notebook_request(user, repo, ref, path)
+        raw_url, blob_url, tree_entry = yield super().get_notebook_data(user, repo, ref, path)
 
         if path.endswith('.ipynb') and getattr(self, 'clone_notebooks', False):
             is_clone = self.get_query_arguments('clone')
@@ -85,7 +85,7 @@ class GitHubBlobRenderingHandler(GitHubBlobHandler):
                 self.clone_to_user_server(truncated_url)
                 return
 
-        yield super().load_notebook(user, repo, ref, path, raw_url, blob_url, tree_entry)
+        yield super().deliver_notebook(user, repo, ref, path, raw_url, blob_url, tree_entry)
 
 class GitHubTreeRenderingHandler(GitHubTreeHandler):
     def render_treelist_template(self, entries, breadcrumbs, provider_url, user, repo, ref, path,
@@ -120,7 +120,7 @@ class LocalRenderingHandler(LocalFileHandler):
     @cached
     @gen.coroutine
     def get(self, path):
-        fullpath = super().format_notebook_request(path)
+        fullpath = super().get_notebook_data(path)
 
         if getattr(self, 'clone_notebooks', False):
             is_clone = self.get_query_arguments('clone')
@@ -128,7 +128,7 @@ class LocalRenderingHandler(LocalFileHandler):
                 self.clone_to_user_server(fullpath)
                 return
 
-        yield super().load_notebook(fullpath, path)
+        yield super().deliver_notebook(fullpath, path)
 
 
 
@@ -145,7 +145,7 @@ class GistRenderingHandler(GistHandler):
 
     @gen.coroutine
     def file_get(self, user, gist_id, filename, gist, many_files_gist, file):
-        content = yield super().format_notebook_request(gist_id, filename, many_files_gist, file)
+        content = yield super().get_notebook_data(gist_id, filename, many_files_gist, file)
 
         if not content:
             return
@@ -158,7 +158,7 @@ class GistRenderingHandler(GistHandler):
                 self.clone_to_user_server(truncated_url)
                 return
 
-        yield super().load_notebook(user, gist_id, filename, gist, file, content)
+        yield super().deliver_notebook(user, gist_id, filename, gist, file, content)
 
 class UserGistsRenderingHandler(UserGistsHandler):
     def render_usergists_template(self, entries, user, provider_url, prev_url, next_url, **namespace):
