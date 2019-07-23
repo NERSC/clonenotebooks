@@ -7,7 +7,7 @@ from notebook.utils import url_path_join
 from notebook.base.handlers import IPythonHandler
 from notebook.services.contents.manager import copy_pat
 import nbformat
-from tornado import web, gen, httpclient
+from tornado import web, httpclient
 from tornado.escape import url_unescape, url_escape
 from nbviewer.utils import response_text
 
@@ -62,8 +62,7 @@ def load_jupyter_server_extension(nb_server_app):
     class URLCloneHandler(CloneHandler):
         client = httpclient.AsyncHTTPClient()
 
-        @gen.coroutine
-        def get(self):
+        async def get(self):
             clone_from = url_unescape(self.get_query_argument('clone_from'))
             try:
                 protocol = self.get_query_argument('protocol')
@@ -81,7 +80,7 @@ def load_jupyter_server_extension(nb_server_app):
             if not url.endswith('.ipynb'):
                 raise web.HTTPError(415)
 
-            response = yield self.client.fetch(remote_url)
+            response = await self.client.fetch(remote_url)
 
             try:
                 nb = response_text(response, encoding='utf-8')
@@ -92,13 +91,11 @@ def load_jupyter_server_extension(nb_server_app):
             self.clone_to_directory(nb, url, clone_to)
 
     class GitHubCloneHandler(IPythonHandler):
-        @gen.coroutine
         def get(self):
             raw_url = self.get_query_argument('clone_from')
             self.redirect('/user-redirect/url_clone?clone_from={}&protocol={}'.format(raw_url, 'https'))
 
     class GistCloneHandler(IPythonHandler):
-        @gen.coroutine
         def get(self):
             raw_url = self.get_query_argument('clone_from')
             self.redirect('/user-redirect/url_clone?clone_from={}&protocol={}'.format(raw_url, 'https'))
