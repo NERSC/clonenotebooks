@@ -23,7 +23,7 @@ def load_jupyter_server_extension(nb_server_app):
 
     # This class is defined in line so it can close over contents_manager.
     class CloneHandler(IPythonHandler):
-        def clone_to_directory(self, nb, file_path, clone_to):
+        def clone_to_directory(self, nb, clone_from, clone_to):
             # convert notebook to current format
             nbnode = nbformat.reads(nb, as_version=4)
             nb = nbformat.writes(nbnode)
@@ -39,11 +39,16 @@ def load_jupyter_server_extension(nb_server_app):
                 'mimetype': None,
                 'type': 'notebook',
                 'writable': True}
-            name = copy_pat.sub(u'.', os.path.basename(file_path))
+            name = copy_pat.sub(u'.', os.path.basename(clone_from))
             to_name = contents_manager.increment_filename(name, clone_to, insert='-Copy')
             full_clone_to = u'{0}/{1}'.format(clone_to, to_name)
             contents_manager.save(model, full_clone_to)
             self.redirect(url_path_join('lab', 'tree', full_clone_to))
+
+        def clone_kernelspec(self, kernelspec, name):
+            with tempfile.TemporaryFolder() as tmpdir, open(os.path.join(tmpdir, "kernel.json"), "w") as tmpfile:
+                tmpfile.write(kernelspec)
+                jupyter_client.kernelspec.install_kernel_spec(source_dir=tmpdir, name=name)
 
     class LocalCloneHandler(CloneHandler):
         def get(self):
@@ -63,32 +68,33 @@ def load_jupyter_server_extension(nb_server_app):
         client = httpclient.AsyncHTTPClient()
 
         async def get(self):
-            clone_from = url_unescape(self.get_query_argument('clone_from'))
+            url = url_unescape(self.get_query_argument('clone_from'))
+            if not url.endswith('.ipynb'):
+                raise web.HTTPError(415)
+
+            clone_to = "/" # root directory of notebook server
+            self.log.info("Cloning notebook from URL: %s", url)
+            nb = await self.fetch_utf8_file(url)
+            
+            self.clone_to_directory(nb, url, clone_to)
+
+        async def fetch_utf8_file(self, url):
             try:
                 protocol = self.get_query_argument('protocol')
             # Assume HTTPS and not HTTP by default:
             except web.MissingArgumentError:
                 protocol = 'https'
 
-            clone_to = "/" # root directory of notebook server
-            self.log.info("Cloning notebook from URL: %s", clone_from)
-
-            clone_from = re.match(r'(?P<netloc>[^/]+)/(?P<url>.*)', clone_from)
-            netloc, url = clone_from.group('netloc', 'url')
-            remote_url = u"{}://{}/{}".format(protocol, netloc, url_escape(url, plus=False))
-
-            if not url.endswith('.ipynb'):
-                raise web.HTTPError(415)
+            remote_url = u"{}://{}".format(protocol, url_escape(url, plus=False))
 
             response = await self.client.fetch(remote_url)
 
             try:
-                nb = response_text(response, encoding='utf-8')
+                utf8_file = response_text(response, encoding='utf-8')
             except UnicodeDecodeError:
-                self.log.error("Notebook is not utf8: %s", remote_url, exc_info=True)
+                self.log.error("File is not utf8: %s", remote_url, exc_info=True)
                 raise web.HTTPError(400)
-            
-            self.clone_to_directory(nb, url, clone_to)
+            return utf8_file
 
     class GitHubCloneHandler(IPythonHandler):
         def get(self):
