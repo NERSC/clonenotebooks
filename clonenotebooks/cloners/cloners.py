@@ -11,6 +11,10 @@ from tornado import web, httpclient
 from tornado.escape import url_unescape, url_escape
 from nbviewer.utils import response_text
 
+from tempfile import TemporaryDirectory
+from jupyter_client.kernelspec import install_kernel_spec
+import sys
+
 def load_jupyter_server_extension(nb_server_app):
     """
     Called when the extension is loaded.
@@ -46,9 +50,9 @@ def load_jupyter_server_extension(nb_server_app):
             self.redirect(url_path_join('lab', 'tree', full_clone_to))
 
         def clone_kernelspec(self, kernelspec, name):
-            with tempfile.TemporaryFolder() as tmpdir, open(os.path.join(tmpdir, "kernel.json"), "w") as tmpfile:
+            with TemporaryDirectory() as tmpdir, open(os.path.join(tmpdir, "kernel.json"), "w+") as tmpfile:
                 tmpfile.write(kernelspec)
-                jupyter_client.kernelspec.install_kernel_spec(source_dir=tmpdir, name=name)
+                install_kernel_spec(source_dir=tmpdir, kernel_name=name, prefix=sys.prefix)
 
     class LocalCloneHandler(CloneHandler):
         def get(self):
@@ -71,6 +75,15 @@ def load_jupyter_server_extension(nb_server_app):
             url = url_unescape(self.get_query_argument('clone_from'))
             if not url.endswith('.ipynb'):
                 raise web.HTTPError(415)
+
+            try:
+                dirname = os.path.dirname(url)
+                kernelspec = await self.fetch_utf8_file(os.path.join(dirname, "kernel.json"))
+                name = os.path.basename(dirname)
+                self.clone_kernelspec(kernelspec, name)
+            except Exception as e:
+                self.log.warning("Failed to load kernel.json or to install kernelspec.")
+                self.log.error(e)
 
             clone_to = "/" # root directory of notebook server
             self.log.info("Cloning notebook from URL: %s", url)
