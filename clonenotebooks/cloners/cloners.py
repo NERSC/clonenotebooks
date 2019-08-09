@@ -50,13 +50,26 @@ def load_jupyter_server_extension(nb_server_app):
             self.redirect(url_path_join('lab', 'tree', full_clone_to))
 
         def clone_kernelspec(self, kernelspec, name):
-            with TemporaryDirectory() as tmpdir, open(os.path.join(tmpdir, "kernel.json"), "w+") as tmpfile:
-                tmpfile.write(kernelspec)
+            with TemporaryDirectory() as tmpdir:
+                with open(os.path.join(tmpdir, "kernel.json"), "w+") as tmpfile:
+                    tmpfile.write(kernelspec)
                 install_kernel_spec(source_dir=tmpdir, kernel_name=name, prefix=sys.prefix)
 
     class LocalCloneHandler(CloneHandler):
         def get(self):
             path = self.get_query_argument('clone_from')
+
+            try:
+                dirname = os.path.dirname(path)
+                with open(os.path.join(dirname, "kernel.json"), 'r') as f:
+                    kerneljson = json.load(f)
+                kernelspec = json.dumps(kerneljson)
+                name = os.path.basename(dirname)
+                self.clone_kernelspec(kernelspec, name)
+            except Exception as e:
+                self.log.warning("Failed to load kernel.json or to install kernelspec.")
+                self.log.error(e)
+
             clone_to = "/"  # root directory of notebook server
             self.log.info("Cloning file at %s to %s", path, clone_to)
             if not os.path.isfile(path):
