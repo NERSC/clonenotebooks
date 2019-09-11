@@ -53,7 +53,7 @@ def load_jupyter_server_extension(nb_server_app):
             with TemporaryDirectory() as tmpdir:
                 with open(os.path.join(tmpdir, "kernel.json"), "w+") as tmpfile:
                     tmpfile.write(kernelspec)
-                install_kernel_spec(source_dir=tmpdir, kernel_name=name, prefix=sys.prefix)
+                install_kernel_spec(source_dir=tmpdir, kernel_name=name, user=True)
 
     class LocalCloneHandler(CloneHandler):
         def get(self):
