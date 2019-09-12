@@ -27,7 +27,6 @@ RUN \
     vim                                                 \
     git						        \
 # nbviewer dependencies
-    libmemcached-dev					\
     libcurl4-openssl-dev				\
     libgnutls28-dev					\
     libzmq3-dev						\
@@ -40,19 +39,20 @@ RUN \
     bash miniconda3.sh -f -b -p /opt/conda							      &&  \
     echo "python 3.7.*" >> /opt/conda/conda-meta/pinned					      	      &&  \
     conda config --add channels conda-forge							      &&  \
-    conda install   elasticsearch							    	      \
+    conda install   									    	      \
     invoke											      \
     jupyterhub											      \
     jupyterlab											      \
     markdown											      \
+### newrelic should probably be made an optional dependency for nbviewer, which can probably happen in a new PR
     newrelic											      \
     nodejs											      \
+### likewise statsd is the same situation as newrelic; it's installed to prevent code from breaking
+    statsd											      \
     pandoc											      \
     psycopg2											      \
     pycurl											      \
-    pylibmc											      \
-    setuptools											      \
-    statsd											      &&  \
+    setuptools											      &&  \
     conda clean --all --yes							      		      &&  \
     rm -rf /opt/conda/pkgs/*   	 							      	      &&  \
 #
@@ -67,7 +67,9 @@ RUN \
 #
     git clone --single-branch --branch step7 https://github.com/krinsman/nbviewer.git /repos/nbviewer	    &&  \
     cd /repos/nbviewer								    			    &&  \
-    pip install -e . --no-cache-dir					    				    &&  \
+# --no-dependencies flag because we don't actually need pylibmc or elasticsearch to run this (without
+# elasticsearch or memcached) and everything else in requirements.txt is already installed
+    pip install -e . --no-cache-dir --no-dependencies			    				    &&  \
     npm install   							    				    &&  \
     invoke bower							    				    &&  \
     invoke less												    &&  \							    

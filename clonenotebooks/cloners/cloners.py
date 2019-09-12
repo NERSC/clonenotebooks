@@ -1,7 +1,6 @@
 from datetime import datetime
 import json
 import os.path
-import re
 
 from notebook.utils import url_path_join
 from notebook.base.handlers import IPythonHandler
@@ -13,7 +12,6 @@ from nbviewer.utils import response_text
 
 from tempfile import TemporaryDirectory
 from jupyter_client.kernelspec import install_kernel_spec
-import sys
 
 def load_jupyter_server_extension(nb_server_app):
     """
