@@ -1,0 +1,18 @@
+{"title": "nbviewer",
+ "subtitle": "A simple way to share Jupyter Notebooks",
+ "text": "",
+ "show_input": false,
+ "sections":[
+   {
+     "header":"",
+     "links":[
+       {
+         "text": "JupyterHub Home",
+         "target": "../../hub/home",
+         "img": "../../hub/logo"
+       }
+     ]
+   }
+   
+ ]
+}
