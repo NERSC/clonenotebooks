@@ -96,7 +96,7 @@
 		<!-- add link to hub home HERE> -->
 
 		<li>
-			<a class="active" role="button" href="../../{{ base_url }}/hub/home">JupyterHub Home</a>
+			<a class="active" role="button" href="{{ url_path_join(hub_base_url, 'hub', 'home') }}">JupyterHub Home</a>
 			</li>
 
           {% block otherlinks %}

@@ -2,13 +2,14 @@ import re
 
 from jupyterhub.services.auth import HubAuthenticated
 
+from nbviewer.handlers import IndexHandler
 from nbviewer.providers.base import cached
 from nbviewer.providers.url.handlers import URLHandler
-from nbviewer.providers.github.handlers import GitHubBlobHandler
-from nbviewer.providers.github.handlers import GitHubTreeHandler
+from nbviewer.providers.github.handlers import GitHubBlobHandler, GitHubTreeHandler, GitHubUserHandler
 from nbviewer.providers.local.handlers import LocalFileHandler
-from nbviewer.providers.gist.handlers import GistHandler
-from nbviewer.providers.gist.handlers import UserGistsHandler
+from nbviewer.providers.gist.handlers import GistHandler, UserGistsHandler
+
+from nbviewer.utils import url_path_join
 
 try: # Python 3.8
     from functools import cached_property
@@ -29,6 +30,19 @@ class CloneRendererMixin(HubAuthenticated):
     def clone_to_user_server(self, url, provider_type, protocol=''):
         self.redirect('/user-redirect/{}_clone?clone_from={}&protocol={}'.format(provider_type, url, protocol))
 
+    # Here `self` will come from BaseHandler in nbviewer.providers.base (from which the other NBViewer handlers inherit)
+    # Contains values to be unpacked into Jinja2 namespace for renderers to render the custom templates in this package
+    @cached_property
+    def CLONENOTEBOOKS_NAMESPACE(self):
+        return {'clone_notebooks': getattr(self, 'clone_notebooks', False), 'hub_base_url': self.hub_base_url,
+                 'url_path_join': url_path_join}
+
+class IndexRenderingHandler(CloneRendererMixin, IndexHandler):
+    """Renders front page a.k.a. index"""
+
+    def render_index_template(self, **namespace):
+        return super().render_index_template(**self.CLONENOTEBOOKS_NAMESPACE)
+
 class URLRenderingHandler(CloneRendererMixin, URLHandler):
     """Renderer for /url or /urls"""
 
@@ -36,8 +50,7 @@ class URLRenderingHandler(CloneRendererMixin, URLHandler):
             json_notebook, **namespace):
 
         return super().render_notebook_template(body, nb, download_url, json_notebook,
-                                                clone_notebooks=getattr(self, 'clone_notebooks', False),
-                                                **namespace)
+                                                **self.CLONENOTEBOOKS_NAMESPACE, **namespace)
 
     @cached
     async def get(self, secure, netloc, url):
@@ -66,8 +79,7 @@ class GitHubBlobRenderingHandler(CloneRendererMixin, GitHubBlobHandler):
                                        **namespace):
 
         return super().render_notebook_template(body, nb, download_url, json_notebook,
-                                                clone_notebooks=getattr(self, 'clone_notebooks', False),
-                                                **namespace)
+                                                **self.CLONENOTEBOOKS_NAMESPACE, **namespace)
 
     @cached
     async def get(self, user, repo, ref, path):
@@ -82,25 +94,27 @@ class GitHubBlobRenderingHandler(CloneRendererMixin, GitHubBlobHandler):
 
         await super().deliver_notebook(user, repo, ref, path, raw_url, blob_url, tree_entry)
 
-class GitHubTreeRenderingHandler(GitHubTreeHandler):
+class GitHubTreeRenderingHandler(CloneRendererMixin, GitHubTreeHandler):
     def render_treelist_template(self, entries, breadcrumbs, provider_url, user, repo, ref, path,
                                  branches, tags, executor_url, **namespace):
         return super().render_treelist_template(entries, breadcrumbs, provider_url, user, repo, ref,
-                       path, branches, tags, executor_url, clone_notebooks=getattr(self, 'clone_notebooks', False), **namespace)
+                       path, branches, tags, executor_url, **self.CLONENOTEBOOKS_NAMESPACE, **namespace)
+
+class GitHubUserRenderingHandler(CloneRendererMixin, GitHubUserHandler):
+    def render_github_user_template(self, entries, provider_url, next_url, prev_url, **namespace):
+        return super().render_github_user_template(entries, provider_url, next_url, prev_url, 
+                                            **self.CLONENOTEBOOKS_NAMESPACE, **namespace)
 
 class LocalRenderingHandler(CloneRendererMixin, LocalFileHandler):
     def render_notebook_template(self, body, nb, download_url,
             json_notebook, **namespace):
 
-        return super().render_notebook_template(body, nb, download_url, json_notebook,
-                                                clone_notebooks=getattr(self, 'clone_notebooks', False),
-                                                base_url=self.base_url, hub_base_url=self.hub_base_url,
-                                                **namespace)
+        return super().render_notebook_template(body, nb, download_url, json_notebook, base_url=self.base_url, 
+                                                **self.CLONENOTEBOOKS_NAMESPACE, **namespace)
 
     def render_dirview_template(self, entries, breadcrumbs, title, **namespace):
 
-        return super().render_dirview_template(entries, breadcrumbs, title,
-                                               clone_notebooks=getattr(self, 'clone_notebooks', False),
+        return super().render_dirview_template(entries, breadcrumbs, title, **self.CLONENOTEBOOKS_NAMESPACE,
                                                **namespace)
 
     @cached
@@ -123,8 +137,7 @@ class GistRenderingHandler(CloneRendererMixin, GistHandler):
     def render_notebook_template(self, body, nb, download_url, json_notebook, **namespace):
 
         return super().render_notebook_template(body, nb, download_url, json_notebook,
-                                                clone_notebooks=getattr(self, 'clone_notebooks', False),
-                                                **namespace)
+                                                **self.CLONENOTEBOOKS_NAMESPACE, **namespace)
 
     async def file_get(self, user, gist_id, filename, gist, many_files_gist, file):
         content = await super().get_notebook_data(gist_id, filename, many_files_gist, file)
@@ -142,9 +155,8 @@ class GistRenderingHandler(CloneRendererMixin, GistHandler):
 
         await super().deliver_notebook(user, gist_id, filename, gist, file, content)
 
-class UserGistsRenderingHandler(UserGistsHandler):
+class UserGistsRenderingHandler(CloneRendererMixin, UserGistsHandler):
     def render_usergists_template(self, entries, user, provider_url, prev_url, next_url, **namespace):
 
         return super().render_usergists_template(entries, user, provider_url, prev_url, next_url, 
-                                                 clone_notebooks=getattr(self, 'clone_notebooks', False),
-                                                 **namespace)
+                                                 **self.CLONENOTEBOOKS_NAMESPACE, **namespace)
