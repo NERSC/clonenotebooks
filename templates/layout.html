@@ -58,7 +58,7 @@
   <![endif]-->
 
   <!-- Le fav and touch icons -->
-  <link rel="shortcut icon" href="/static/ico/ipynb_icon_16x16.png">
+  <link rel="shortcut icon" href="{{ static_url("ico/ipynb_icon_16x16.png") }}">
   <link rel="apple-touch-icon-precomposed" sizes="144x144"
         href="{{ static_url("ico/apple-touch-icon-144-precomposed.png") }}">
   <link rel="apple-touch-icon-precomposed" sizes="114x114"
@@ -94,10 +94,11 @@
       <div class="collapse navbar-collapse">
         <ul class="nav navbar-nav navbar-right">
 		<!-- add link to hub home HERE> -->
-
+                {% if hub_base_url %}
 		<li>
 			<a class="active" role="button" href="{{ url_path_join(hub_base_url, 'hub', 'home') }}">JupyterHub Home</a>
 			</li>
+		{% endif %}
 
           {% block otherlinks %}
             {% if provider_url %}
