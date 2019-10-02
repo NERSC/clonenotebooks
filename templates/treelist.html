@@ -76,7 +76,9 @@
               </a>
             {% endif %}
             {% if clone_notebooks and entry.url and entry.class == 'fa-book' %}
-              <a class="clone-btn treelist-clone-btn" role="button" href="{{ from_base(entry.url) }}?clone" style="float:right;"><button class="btn btn-default" type="button" style="color:grey; padding:2px 5px 2px 5px;">Clone into home directory</button></a>
+              <a class="dirview-clone-btn" role="button" href="{{ from_base(entry.url) }}?clone">
+		      <button class="clone-btn btn btn-default" type="button">Clone into home directory</button>
+	      </a>
             {% endif %}
           </td>
         </tr>

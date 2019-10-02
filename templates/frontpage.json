@@ -9,7 +9,12 @@
        {
          "text": "JupyterHub Home",
          "target": "../../hub/home",
-         "img": "../../hub/logo"
+         "img": "img/hub_logo.svg"
+       },
+       {
+         "text": "JupyterLab",
+	 "target":"../..",
+	 "img": "img/jupyterlab_logo.png"
        }
      ]
    }

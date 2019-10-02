@@ -1,0 +1,26 @@
+.clone-btn {
+    color:grey; 
+    padding:2px 5px 2px 5px;
+}
+
+.dirview-clone-btn {
+    float:right;
+}
+
+.hub-home-btn {
+    background-color:#fff;
+    border-color:#ccc;
+    color:#e46e2e;
+    padding:2px 5px 2px 5px;
+}
+
+.navbar-clone-btn {
+
+}
+
+.notebook-server-btn {
+    background-color:#fff;
+    border-color:#ccc;
+    color:#2c7bb6;
+    padding:2px 5px 2px 5px;
+}

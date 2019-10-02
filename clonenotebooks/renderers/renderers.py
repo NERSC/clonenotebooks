@@ -35,7 +35,7 @@ class CloneRendererMixin(HubAuthenticated):
     @cached_property
     def CLONENOTEBOOKS_NAMESPACE(self):
         return {'clone_notebooks': getattr(self, 'clone_notebooks', False), 'hub_base_url': self.hub_base_url,
-                 'url_path_join': url_path_join}
+                'url_path_join': url_path_join, 'user_name': self.user_name}
 
 class IndexRenderingHandler(CloneRendererMixin, IndexHandler):
     """Renders front page a.k.a. index"""

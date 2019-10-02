@@ -33,7 +33,9 @@
     {% if clone_notebooks and len(entry.notebooks) == 1  %}
     {% set notebook = entry.notebooks[0] %}
     <td>
-    <a class="clone-btn dirview-clone-btn" role="button" href='{{ from_base(entry.id, notebook) }}?clone' style="float:right;"><button class="btn btn-default" type="button" style="color:grey; padding:2px 5px 2px 5px;">Clone into home directory</button></a>
+    <a class="dirview-clone-btn" role="button" href='{{ from_base(entry.id, notebook) }}?clone'>
+	    <button class="clone-btn btn btn-default" type="button">Clone into home directory</button>
+    </a>
     </td>
     {% endif %}
   </tr>
