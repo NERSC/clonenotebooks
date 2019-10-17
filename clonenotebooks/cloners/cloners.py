@@ -8,7 +8,7 @@ from notebook.services.contents.manager import copy_pat
 import nbformat
 from tornado import web, httpclient
 from tornado.escape import url_unescape, url_escape
-from nbviewer.utils import response_text
+from ..utils import response_text
 
 from tempfile import TemporaryDirectory
 from jupyter_client.kernelspec import install_kernel_spec

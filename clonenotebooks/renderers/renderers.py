@@ -11,15 +11,7 @@ from nbviewer.providers.gist.handlers import GistHandler, UserGistsHandler
 
 from nbviewer.utils import url_path_join
 
-try: # Python 3.8
-    from functools import cached_property
-except ImportError:
-    try: # When my nbviewer fork gets merged into master
-        from nbviewer.utils import cached_property
-    except ImportError:
-        from functools import lru_cache
-        def cached_property(method):
-            return property(lru_cache(1)(method))
+from ..utils import cached_property
 
 class CloneRendererMixin(HubAuthenticated):
     @cached_property
