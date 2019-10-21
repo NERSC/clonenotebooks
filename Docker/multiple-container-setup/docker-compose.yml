@@ -1,0 +1,27 @@
+version: "3"
+services:
+  web:
+    image: clonenotebooks/web-jupyterhub:latest
+    environment:
+      - CONFIGPROXY_AUTH_TOKEN=the-sign-pointed-this-way
+      - NBVIEWER_JUPYTERHUB_API_TOKEN=the-hands-of-fate-have-doomed-this-man
+      - JUPYTERHUB_CRYPT_KEY=donotusethisasasecretinreallifethisisjustanexampleforapublicrepo
+    volumes:
+      - ./config:/config
+    ports:
+      - 8081:8081
+  web-nbviewer:
+    image: clonenotebooks/web-nbviewer:latest
+    environment:
+      - JUPYTERHUB_API_TOKEN=the-hands-of-fate-have-doomed-this-man
+      - JUPYTERHUB_API_URL=http://web:8081/hub/api
+      - JUPYTERHUB_BASE_URL=/
+      - JUPYTERHUB_SERVICE_PREFIX=/services/nbviewer
+    ports:
+      - 5000:5000
+  web-proxy:
+    image: jupyterhub/configurable-http-proxy:latest
+    environment:
+      - CONFIGPROXY_AUTH_TOKEN=the-sign-pointed-this-way
+    ports:
+      - 8000:8000
