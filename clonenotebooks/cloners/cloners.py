@@ -44,6 +44,7 @@ def load_jupyter_server_extension(nb_server_app):
             name = copy_pat.sub(u'.', os.path.basename(clone_from))
             to_name = contents_manager.increment_filename(name, clone_to, insert='-Copy')
             full_clone_to = u'{0}/{1}'.format(clone_to, to_name)
+            self.log.debug("Contents manager root_dir: %s", contents_manager.root_dir)
             contents_manager.save(model, full_clone_to)
             self.redirect(url_path_join('lab', 'tree', full_clone_to))
 
