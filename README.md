@@ -47,7 +47,17 @@ necessary) with the lines:
     c.NBViewer.gist_handler        = "clonenotebooks.renderers.GistRenderingHandler"
     c.NBViewer.user_gists_handler  = "clonenotebooks.renderers.UserGistsRenderingHandler"
 
-A copy of this file is also included in this repository, in the [`Docker` subfolder](https://github.com/krinsman/clonenotebooks/tree/master/Docker). Ideally this
+By default notebooks are cloned into the root directory as determined by the value of `c.Spawner.notebook_dir` in `jupyterhub_config.py`. For cloning notebooks into another directory, the line `c.NBViewer.handler_settings` in `nbviewer_config.py` needs to be modified as follows:
+
+    c.NBViewer.handler_settings    = {'clone_notebooks' : True, 'clone_to_directory' : <desired directory here>}
+
+One can include `{username}` as a stand-in for the JupyterHub user's name, analogous to the settings for `c.Spawner.notebook_dir` and `c.Spawner.default_url` in `jupyterhub_config.py`. For example the following is valid:
+
+    c.NBViewer.handler_settings    = {'clone_notebooks' : True, 'clone_to_directory' : '/users/{username[0]}/{username}'}
+
+will cause notebooks to be cloned into `/jupyter/users/f/foo` for user `foo` and `/jupyter/users/b/bar` for user `bar` if the value of `c.Spawner.notebook_dir` is `'/jupyter'`, and will cause notebooks to be cloned into `/users/f/foo` for user `foo` and `/users/b/bar` for user `bar` if the value of `c.Spawner.notebook_dir` is `'/'`. In particular, the destination where notebooks is cloned will **always** be relative to the contents manager's root directory (which will usually equal the value of `c.Spawner.notebook_dir`).
+
+An example copy of `nbviewer_config.py` is also included in this repository, in the [`Docker` subfolder](https://github.com/krinsman/clonenotebooks/tree/master/Docker). Ideally this
 should have everything configured, but admittedly these setup instructions are more
 vague than they could be and might not have suggested an important step. 
 

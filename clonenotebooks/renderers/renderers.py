@@ -15,19 +15,28 @@ from ..utils import cached_property
 
 class CloneRendererMixin(HubAuthenticated):
     @cached_property
-    def user_name(self):
+    def username(self):
         current_user = self.get_current_user()
         return current_user["name"]
 
+    @cached_property
+    def clone_to(self):
+        # A string determined by user's config settings, possibly including {username} as a standin
+        # Analogous to c.Spawner.notebook_dir and c.Spawner.default_url config in JupyterHub
+        clone_to_directory = getattr(self, 'clone_to_directory', '')
+        clone_to = clone_to_directory.format(username=self.username)
+        self.log.info('clone_to: %s', clone_to)
+        return clone_to
+
     def clone_to_user_server(self, url, provider_type, protocol=''):
-        self.redirect('/user-redirect/{}_clone?clone_from={}&protocol={}'.format(provider_type, url, protocol))
+        self.redirect('/user-redirect/{}_clone?clone_from={}&clone_to={}&protocol={}'.format(provider_type, url, self.clone_to, protocol))
 
     # Here `self` will come from BaseHandler in nbviewer.providers.base (from which the other NBViewer handlers inherit)
     # Contains values to be unpacked into Jinja2 namespace for renderers to render the custom templates in this package
     @cached_property
     def CLONENOTEBOOKS_NAMESPACE(self):
         return {'clone_notebooks': getattr(self, 'clone_notebooks', False), 'hub_base_url': self.hub_base_url,
-                'url_path_join': url_path_join, 'user_name': self.user_name}
+                'url_path_join': url_path_join, 'username': self.username}
 
 class IndexRenderingHandler(CloneRendererMixin, IndexHandler):
     """Renders front page a.k.a. index"""

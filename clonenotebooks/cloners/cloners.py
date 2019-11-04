@@ -42,9 +42,10 @@ def load_jupyter_server_extension(nb_server_app):
                 'type': 'notebook',
                 'writable': True}
             name = copy_pat.sub(u'.', os.path.basename(clone_from))
-            to_name = contents_manager.increment_filename(name, clone_to, insert='-Copy')
+            # Note: clone destination is relative to root directory of notebook server
+            self.log.debug("Intended clone destination: %s", os.path.normpath(os.path.join(contents_manager.root_dir, clone_to)))
+            to_name = contents_manager.increment_filename(filename=name, path=clone_to, insert='-Copy')
             full_clone_to = u'{0}/{1}'.format(clone_to, to_name)
-            self.log.debug("Contents manager root_dir: %s", contents_manager.root_dir)
             contents_manager.save(model, full_clone_to)
             self.redirect(url_path_join('lab', 'tree', full_clone_to))
 
@@ -69,7 +70,7 @@ def load_jupyter_server_extension(nb_server_app):
                 self.log.warning("Failed to load kernel.json or to install kernelspec.")
                 self.log.error(e)
 
-            clone_to = "/"  # root directory of notebook server
+            clone_to = self.get_query_argument('clone_to', default='/')
             self.log.info("Cloning file at %s to %s", path, clone_to)
             if not os.path.isfile(path):
                 raise web.HTTPError(400, "No such file: %s" % path)
@@ -97,7 +98,7 @@ def load_jupyter_server_extension(nb_server_app):
                 self.log.warning("Failed to load kernel.json or to install kernelspec.")
                 self.log.error(e)
 
-            clone_to = "/" # root directory of notebook server
+            clone_to = self.get_query_argument('clone_to', default='/')
             self.log.info("Cloning notebook from URL: %s", url)
             nb = await self.fetch_utf8_file(url)
             
@@ -124,12 +125,14 @@ def load_jupyter_server_extension(nb_server_app):
     class GitHubCloneHandler(IPythonHandler):
         def get(self):
             raw_url = self.get_query_argument('clone_from')
-            self.redirect('/user-redirect/url_clone?clone_from={}&protocol={}'.format(raw_url, 'https'))
+            clone_to = self.get_query_argument('clone_to', default='/')
+            self.redirect('/user-redirect/url_clone?clone_from={}&clone_to={}&protocol={}'.format(raw_url, clone_to, 'https'))
 
     class GistCloneHandler(IPythonHandler):
         def get(self):
             raw_url = self.get_query_argument('clone_from')
-            self.redirect('/user-redirect/url_clone?clone_from={}&protocol={}'.format(raw_url, 'https'))
+            clone_to = self.get_query_argument('clone_to', default='/')
+            self.redirect('/user-redirect/url_clone?clone_from={}&clone_to={}&protocol={}'.format(raw_url, clone_to, 'https'))
 
     host_pattern = '.*$'
     base_url = web_app.settings['base_url']
