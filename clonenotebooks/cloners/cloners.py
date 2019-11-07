@@ -122,26 +122,12 @@ def load_jupyter_server_extension(nb_server_app):
                 raise web.HTTPError(400)
             return utf8_file
 
-    class GitHubCloneHandler(IPythonHandler):
-        def get(self):
-            raw_url = self.get_query_argument('clone_from')
-            clone_to = self.get_query_argument('clone_to', default='/')
-            self.redirect('/user-redirect/url_clone?clone_from={}&clone_to={}&protocol={}'.format(raw_url, clone_to, 'https'))
-
-    class GistCloneHandler(IPythonHandler):
-        def get(self):
-            raw_url = self.get_query_argument('clone_from')
-            clone_to = self.get_query_argument('clone_to', default='/')
-            self.redirect('/user-redirect/url_clone?clone_from={}&clone_to={}&protocol={}'.format(raw_url, clone_to, 'https'))
-
     host_pattern = '.*$'
     base_url = web_app.settings['base_url']
     url_route_pattern    = url_path_join(base_url, '/url_clone')
-    github_route_pattern = url_path_join(base_url, '/github_clone')
     local_route_pattern  = url_path_join(base_url, '/local_clone')
-    gist_route_pattern   = url_path_join(base_url, '/gist_clone')
 
-    web_app.add_handlers(host_pattern, [(url_route_pattern, URLCloneHandler),
-                                        (github_route_pattern, GitHubCloneHandler),
+    web_app.add_handlers(host_pattern, [
+                                        (url_route_pattern, URLCloneHandler),
                                         (local_route_pattern, LocalCloneHandler),
-                                        (gist_route_pattern, GistCloneHandler)])
+                                        ])

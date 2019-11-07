@@ -28,7 +28,7 @@ class CloneRendererMixin(HubAuthenticated):
         self.log.info('clone_to: %s', clone_to)
         return clone_to
 
-    def clone_to_user_server(self, url, provider_type, protocol=''):
+    def clone_to_user_server(self, url, provider_type, protocol='https'):
         self.redirect('/user-redirect/{}_clone?clone_from={}&clone_to={}&protocol={}'.format(provider_type, url, self.clone_to, protocol))
 
     # Here `self` will come from BaseHandler in nbviewer.providers.base (from which the other NBViewer handlers inherit)
@@ -90,7 +90,7 @@ class GitHubBlobRenderingHandler(CloneRendererMixin, GitHubBlobHandler):
             is_clone = self.get_query_arguments('clone')
             if is_clone:
                 truncated_url = re.match(r'^https?://(?P<truncated_url>.*)', raw_url).group('truncated_url')
-                self.clone_to_user_server(url=truncated_url, provider_type='github')
+                self.clone_to_user_server(url=truncated_url, provider_type='url')
                 return
 
         await super().deliver_notebook(user, repo, ref, path, raw_url, blob_url, tree_entry)
@@ -151,7 +151,7 @@ class GistRenderingHandler(CloneRendererMixin, GistHandler):
             if is_clone:
                 raw_url = file['raw_url']
                 truncated_url = re.match(r'^https?://(?P<truncated_url>.*)', raw_url).group('truncated_url')
-                self.clone_to_user_server(url=truncated_url, provider_type='gist')
+                self.clone_to_user_server(url=truncated_url, provider_type='url')
                 return
 
         await super().deliver_notebook(user, gist_id, filename, gist, file, content)
