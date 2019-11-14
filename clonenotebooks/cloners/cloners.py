@@ -45,7 +45,7 @@ def load_jupyter_server_extension(nb_server_app):
             # Note: clone destination is relative to root directory of notebook server
             self.log.debug("Intended clone destination: %s", os.path.normpath(os.path.join(contents_manager.root_dir, clone_to)))
             to_name = contents_manager.increment_filename(filename=name, path=clone_to, insert='-Copy')
-            full_clone_to = u'{0}/{1}'.format(clone_to, to_name)
+            full_clone_to = os.path.join(clone_to, to_name)
             contents_manager.save(model, full_clone_to)
             self.redirect(url_path_join('lab', 'tree', full_clone_to))
 
@@ -111,7 +111,7 @@ def load_jupyter_server_extension(nb_server_app):
             except web.MissingArgumentError:
                 protocol = 'https'
 
-            remote_url = u"{}://{}".format(protocol, url_escape(url, plus=False))
+            remote_url = "{}://{}".format(protocol, url_escape(url, plus=False))
 
             response = await self.client.fetch(remote_url)
 

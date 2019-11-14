@@ -90,7 +90,7 @@ class GitHubBlobRenderingHandler(CloneRendererMixin, GitHubBlobHandler):
             is_clone = self.get_query_arguments('clone')
             if is_clone:
                 truncated_url = re.match(r'^https?://(?P<truncated_url>.*)', raw_url).group('truncated_url')
-                self.clone_to_user_server(url=truncated_url, provider_type='url')
+                self.clone_to_user_server(url=truncated_url, provider_type='url', protocol='https')
                 return
 
         await super().deliver_notebook(user, repo, ref, path, raw_url, blob_url, tree_entry)
@@ -125,7 +125,7 @@ class LocalRenderingHandler(CloneRendererMixin, LocalFileHandler):
         if getattr(self, 'clone_notebooks', False):
             is_clone = self.get_query_arguments('clone')
             if is_clone:
-                self.clone_to_user_server(url=fullpath, provider_type='local')
+                self.clone_to_user_server(url=fullpath, provider_type='local', protocol='')
                 return
 
         # get_notebook_data returns None if a directory is to be shown or a notebook is to be downloaded,
@@ -151,7 +151,7 @@ class GistRenderingHandler(CloneRendererMixin, GistHandler):
             if is_clone:
                 raw_url = file['raw_url']
                 truncated_url = re.match(r'^https?://(?P<truncated_url>.*)', raw_url).group('truncated_url')
-                self.clone_to_user_server(url=truncated_url, provider_type='url')
+                self.clone_to_user_server(url=truncated_url, provider_type='url', protocol='https')
                 return
 
         await super().deliver_notebook(user, gist_id, filename, gist, file, content)

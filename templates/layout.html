@@ -98,13 +98,13 @@
                 {% if hub_base_url %}
                 {% if username %}
                 <li>
-                <a class="active" role="button" href="{{ url_path_join(hub_base_url, 'user', username) }}">
+                <a class="active" target="JupyterLab" role="button" href="{{ url_path_join(hub_base_url, 'user', username) }}">
 			<button class="notebook-server-btn btn btn-default">{{ username }}'s Notebook Server</button>
 		</a>
 		</li>
 		{% endif %}
 		<li>
-			<a class="active" role="button" href="{{ url_path_join(hub_base_url, 'hub', 'home') }}">
+			<a class="active" target="JupyterHub" role="button" href="{{ url_path_join(hub_base_url, 'hub', 'home') }}">
 				<button class="hub-home-btn btn btn-default">JupyterHub Home</button>
 			</a>
 			</li>
