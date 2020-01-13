@@ -49,11 +49,14 @@ def load_jupyter_server_extension(nb_server_app):
             contents_manager.save(model, full_clone_to)
             self.redirect(url_path_join('lab', 'tree', full_clone_to))
 
-        def clone_kernelspec(self, kernelspec, name):
-            with TemporaryDirectory() as tmpdir:
-                with open(os.path.join(tmpdir, "kernel.json"), "w+") as tmpfile:
-                    tmpfile.write(kernelspec)
-                install_kernel_spec(source_dir=tmpdir, kernel_name=name, user=True)
+        def clone_kernelspec(self, kernelspec, kernel_name):
+            if kernelspec is not None:
+                with TemporaryDirectory() as tmpdir:
+                    with open(os.path.join(tmpdir, "kernel.json"), "w+") as tmpfile:
+                        tmpfile.write(kernelspec)
+                    install_kernel_spec(source_dir=tmpdir, kernel_name=kernel_name, user=True)
+            else:
+                self.log.warning("Failed to install kernelspec, as there was no kernelspec to be installed.")
 
     class LocalCloneHandler(CloneHandler):
         def get(self):
@@ -64,8 +67,8 @@ def load_jupyter_server_extension(nb_server_app):
                 with open(os.path.join(dirname, "kernel.json"), 'r') as f:
                     kerneljson = json.load(f)
                 kernelspec = json.dumps(kerneljson)
-                name = os.path.basename(dirname)
-                self.clone_kernelspec(kernelspec, name)
+                kernel_name = os.path.basename(dirname)
+                self.clone_kernelspec(kernelspec, kernel_name)
             except Exception as e:
                 self.log.warning("Failed to load kernel.json or to install kernelspec.")
                 self.log.error(e)
@@ -89,15 +92,52 @@ def load_jupyter_server_extension(nb_server_app):
             if not url.endswith('.ipynb'):
                 raise web.HTTPError(415)
 
+            # Try to find kernelspec at designated source location
+            # This is the root of the git repository if notebook is on GitHub
             try:
-                dirname = os.path.dirname(url)
-                kernelspec = await self.fetch_utf8_file(os.path.join(dirname, "kernel.json"))
-                name = os.path.basename(dirname)
-                self.clone_kernelspec(kernelspec, name)
+                kernelspec_source = self.get_query_argument('kernelspec_source')
+                kernelspec = await self.fetch_utf8_file(os.path.join(kernelspec_source, "kernel.json"))
             except Exception as e:
-                self.log.warning("Failed to load kernel.json or to install kernelspec.")
-                self.log.error(e)
+                global_kernelspec_error = e
+            else:
+                global_kernelspec_error = None
 
+            # Try to find kernelspec in same directory as notebook
+            # If it exists, overwrite any existing kernelspec
+            dirname = os.path.dirname(url)
+            try:
+                kernelspec = await self.fetch_utf8_file(os.path.join(dirname, "kernel.json"))
+            except Exception as e:
+                local_kernelspec_error = e
+            else:
+                local_kernelspec_error = None
+
+            # If kernelspec can't be found at either location, report warning
+            if global_kernelspec_error is not None and local_kernelspec_error is not None:
+                self.log.warning("Failed to load kernel.json")
+                self.log.warning(global_kernelspec_error)
+                self.log.warning(local_kernelspec_error)
+                kernelspec = None
+
+            try:
+                kernel_name = self.get_query_argument('kernel_name')
+            except web.MissingArgumentError:
+                kernel_name = os.path.basename(dirname)
+            else:
+                # If kernel_name is specified and kernelspec found locally
+                # Avoid overwriting any global kernelspecs with same name
+                if local_kernelspec_error is None:
+                    # Deal with edge case where global and local kernelspec are the same
+                    if kernelspec_source != dirname:
+                        kernel_name += '-{}'.format(os.path.basename(dirname))
+            
+            # Try to install the kernelspec, but even if this fails clone notebook anyway
+            try:
+                self.clone_kernelspec(kernelspec, kernel_name)
+            except Exception as e:
+                self.log.warning("Failed to install kernelspec.")
+                self.log.warning(e)
+              
             clone_to = self.get_query_argument('clone_to', default='/')
             self.log.info("Cloning notebook from URL: %s", url)
             nb = await self.fetch_utf8_file(url)

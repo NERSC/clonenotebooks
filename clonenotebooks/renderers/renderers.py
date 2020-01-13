@@ -1,3 +1,4 @@
+import os
 import re
 
 from jupyterhub.services.auth import HubAuthenticated
@@ -28,8 +29,13 @@ class CloneRendererMixin(HubAuthenticated):
         self.log.info('clone_to: %s', clone_to)
         return clone_to
 
-    def clone_to_user_server(self, url, provider_type, protocol='https'):
-        self.redirect('/user-redirect/{}_clone?clone_from={}&clone_to={}&protocol={}'.format(provider_type, url, self.clone_to, protocol))
+    def clone_to_user_server(self, url, provider_type, protocol='https', kernel_name=None, kernelspec_source=None):
+        redirect_endpoint = '/user-redirect/{}_clone?clone_from={}&clone_to={}&protocol={}'.format(provider_type, url, self.clone_to, protocol)
+        if kernel_name:
+            redirect_endpoint += '&kernel_name={}'.format(kernel_name)
+        if kernelspec_source:
+            redirect_endpoint += '&kernelspec_source={}'.format(kernelspec_source)
+        self.redirect(redirect_endpoint)
 
     # Here `self` will come from BaseHandler in nbviewer.providers.base (from which the other NBViewer handlers inherit)
     # Contains values to be unpacked into Jinja2 namespace for renderers to render the custom templates in this package
@@ -90,7 +96,14 @@ class GitHubBlobRenderingHandler(CloneRendererMixin, GitHubBlobHandler):
             is_clone = self.get_query_arguments('clone')
             if is_clone:
                 truncated_url = re.match(r'^https?://(?P<truncated_url>.*)', raw_url).group('truncated_url')
-                self.clone_to_user_server(url=truncated_url, provider_type='url', protocol='https')
+
+                if os.environ.get('GITHUB_API_URL', '') == '': # Default is no GitHub Enterprise
+                    repo_root_url = re.match(r'^https?://(?P<repo_root_url>[^\/]+/[^\/]+/[^\/]+/[^\/]+)/.*', raw_url).group('repo_root_url')
+                else: # GitHub Enterprise raw urls formatted differently
+                    repo_root_url = re.match(r'^https?://(?P<repo_root_url>[^\/]+/[^\/]+/[^\/]+/raw/[^\/]+)/.*', raw_url).group('repo_root_url') 
+
+                kernel_name = '{}-{}'.format(repo, ref)
+                self.clone_to_user_server(url=truncated_url, provider_type='url', protocol='https', kernel_name=kernel_name, kernelspec_source=repo_root_url)
                 return
 
         await super().deliver_notebook(user, repo, ref, path, raw_url, blob_url, tree_entry)
