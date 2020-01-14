@@ -1,2 +1,3 @@
-include templates/*
-include static/*
+include templates/* 
+include static/clonenotebooks/*
+include static/img/*
