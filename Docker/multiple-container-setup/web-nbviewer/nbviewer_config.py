@@ -10,7 +10,7 @@ c.NBViewer.github_tree_handler = "clonenotebooks.renderers.GitHubTreeRenderingHa
 c.NBViewer.gist_handler        = "clonenotebooks.renderers.GistRenderingHandler"
 c.NBViewer.user_gists_handler  = "clonenotebooks.renderers.UserGistsRenderingHandler"
 
-c.NBViewer.localfiles = "/repos/nbviewer/notebook-5.7.8/tools/tests"
+c.NBViewer.localfiles = "/home/william"
 c.NBViewer.template_path = "/repos/clonenotebooks/templates"
 
 #c.NBViewer.frontpage = "/repos/clonenotebooks/templates/frontpage.json"

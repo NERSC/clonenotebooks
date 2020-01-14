@@ -2,4 +2,5 @@
 
 docker build                    \
     "$@"                        \
-    --tag clonenotebooks/web-nbviewer:latest .
+    --tag clonenotebooks:web-nbviewer . \
+    --force-rm --no-cache 

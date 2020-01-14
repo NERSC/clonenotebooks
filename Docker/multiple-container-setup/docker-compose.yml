@@ -1,4 +1,4 @@
-version: "3"
+version: "3.7"
 services:
   web:
     image: clonenotebooks/web-jupyterhub:latest
@@ -8,6 +8,9 @@ services:
       - JUPYTERHUB_CRYPT_KEY=donotusethisasasecretinreallifethisisjustanexampleforapublicrepo
     volumes:
       - ./config:/config
+      - type: bind
+        source: ./localfiles_test
+        target: /home/william
     ports:
       - 8081:8081
   web-nbviewer:
@@ -19,9 +22,20 @@ services:
       - JUPYTERHUB_SERVICE_PREFIX=/services/nbviewer
     ports:
       - 5000:5000
+    volumes:
+      - type: bind
+        source: ./localfiles_test
+        target: /home/william
   web-proxy:
     image: jupyterhub/configurable-http-proxy:latest
     environment:
       - CONFIGPROXY_AUTH_TOKEN=the-sign-pointed-this-way
     ports:
       - 8000:8000
+
+volumes:
+  named_volume_mount_of_localfiles:
+    driver_opts:
+      type: none
+      o: bind
+      device: $PWD/localfiles_test

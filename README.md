@@ -67,6 +67,14 @@ which the documentation could be improved, since it will be much
 appreciated. [Here is a link to the issues page](https://github.com/krinsman/clonenotebooks/issues)
 for requests for improved documentation and/or general feedback.
 
+## Kernelspec Cloning
+
+For notebooks from almost any source (local, Gist, URL), `clonenotebooks` checks for a "local" kernelspec (`kernel.json`) file located in the same directory as the notebook being cloned, with the assumption that this kernelspec can be used at the clone destination to load the environment needed to run the environment. If it finds one, the kernelspec is installed in addition to the notebook being cloned. The name given to the kernelspec (i.e. the name of the corresponding directory in `<environment_path>/share/jupyter/kernels`) is by default the name of the enclosing directory. ("Kernel name" as used here should not be confused with the `display_name` attribute of the `kernel.json`, which is what is visible to the end-user and does not need to be unique.) (In the case of notebooks from URLs or Gist, "enclosing directory" refers to the "base name" of the URL "path" excluding the filename, e.g. `test` in `https://example.com/test/notebook.ipynb`.) If a kernelspec with the same name is already found, the previous one is overwritten. In particular, if you update the kernelspec (`kernel.json`) file in the directory and then clone another notebook from that directory, the updated kernelspec will replace the previous one.
+
+The behavior is somewhat different for notebooks sourced from **GitHub**. First, `clonenotebooks` checks for a "global" kernelspec located at the repository's root directory. Second, it checks for a "local" kernelspec in the notebook's directory as in the cases above. If a "local" kernelspec is found, regardless of whether a "global" kernelspec is also found, the "local" kernelspec will be installed, and under the name `<repo_name>-<branch_name>-<enclosing_directory>` (so as to avoid name conflicts with any "global" kernelspecs). If a "global" kernelspec is found, but no "local" kernelspec is found, then the "global" kernelspec is installed under the name `<repo_name>-<branch_name>`. (For notebooks located in the repository root, any `kernel.json` located also in the repository root will be treated as a "global" kernelspec, and thus installed under `<repo_name>-<branch_name>`, even though in this case the `kernel.json` is technically also a "local" kernelspec.)
+
+"Global" kernelspecs could probably be implemented for other notebook sources if there is demand for the feature and if sensible defaults can be chosen for the locations to check for the "global" kernelspec.
+
 ## Features
 
 This extension can clone notebooks served from:
@@ -85,3 +93,7 @@ This extension can clone notebooks served from:
 [![local_dirview_clone](docs/images/local_dirview_clone_thumbnail.png)](https://gfycat.com/ficklescentedasianpiedstarling)
 * individual local files
 [![local_clone](docs/images/local_clone_thumbnail.png)](https://gfycat.com/fakedeephawaiianmonkseal)
+
+### Attributions
+
+Example notebooks included in multiple-container Dockerfile demo are from the [Jupyter gallery of interesting notebooks](https://github.com/jupyter/jupyter/wiki/A-gallery-of-interesting-Jupyter-Notebooks). Credit for them belongs to their respective authors ([Filipa Rodrigues](https://www.linkedin.com/in/filipacrodrigues/), [Jason Chin](https://twitter.com/infoecho), [Shashi Gowda](https://github.com/shashi)).

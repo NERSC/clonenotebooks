@@ -2,4 +2,5 @@
 
 docker build                    \
     "$@"                        \
-    --tag clonenotebooks/web-jupyterhub:latest .
+    --tag clonenotebooks:web-jupyterhub . \
+    --force-rm --no-cache

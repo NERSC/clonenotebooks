@@ -2,4 +2,5 @@
 
 docker build    \
     --no-cache  \
-    --tag clonenotebooks/jupyter-base:latest .
+    --tag clonenotebooks:jupyter-base . \
+    --force-rm

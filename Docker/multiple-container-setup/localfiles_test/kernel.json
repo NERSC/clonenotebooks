@@ -1,0 +1,11 @@
+{
+ "argv": [
+  "/opt/anaconda3/bin/python3",
+  "-m",
+  "ipykernel_launcher",
+  "-f",
+  "{connection_file}"
+ ],
+ "display_name": "Test 1 or Test 3 Succeeded!",
+ "language": "python"
+}
