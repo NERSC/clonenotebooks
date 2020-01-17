@@ -16,12 +16,12 @@ setup(
     url="https://github.com/krinsman/clonenotebooks",
     author="William Krinsman",
     author_email="krinsman@berkeley.edu",
-    license="GPLv3+",
+    license="BSD",
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
-        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "License :: OSI Approved :: BSD License",
     ],
     packages=["clonenotebooks", "clonenotebooks.cloners", "clonenotebooks.renderers"],
     install_requires=[
