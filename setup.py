@@ -9,19 +9,19 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="clonenotebooks",
-    version="1.0.1",
+    version="1.0.2",
     description="NBViewer extension and Jupyter notebook extension for cloning notebooks viewed in NBViewer to user's home directory.",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/krinsman/clonenotebooks",
     author="William Krinsman",
     author_email="krinsman@berkeley.edu",
-    license="GPLv3+",
+    license="BSD",
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
-        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "License :: OSI Approved :: BSD License",
     ],
     packages=["clonenotebooks", "clonenotebooks.cloners", "clonenotebooks.renderers"],
     install_requires=[
