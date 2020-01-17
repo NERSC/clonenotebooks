@@ -147,7 +147,9 @@ def load_jupyter_server_extension(nb_server_app):
                 if local_kernelspec_error is None:
                     # Deal with edge case where global and local kernelspec are the same
                     if kernelspec_source != dirname:
-                        kernel_name += "-{}".format(os.path.basename(dirname))
+                        kernel_name += "-{}".format(
+                            dirname.replace("/", "_").replace(".", "_")
+                        )
 
             # Try to install the kernelspec, but even if this fails clone notebook anyway
             try:
