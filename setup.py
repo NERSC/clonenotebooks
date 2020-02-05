@@ -9,7 +9,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="clonenotebooks",
-    version="1.0.2",
+    version="1.0.3",
     description="NBViewer extension and Jupyter notebook extension for cloning notebooks viewed in NBViewer to user's home directory.",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -33,4 +33,9 @@ setup(
         "jupyter_client",
     ],
     include_package_data=True,
+    data_files=[
+        ("etc/jupyter/jupyter_notebook_config.d", [
+            "clonenotebooks/cloners/jupyter-config/jupyter_notebook_config.d/cloners.json"
+        ])
+    ],
 )

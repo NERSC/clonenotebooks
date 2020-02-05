@@ -1,3 +1,4 @@
 include templates/* 
 include static/clonenotebooks/*
 include static/img/*
+include clonenotebooks/cloners/jupyter-config/jupyter_notebook_config.d/cloners.json
