@@ -9,6 +9,9 @@ ip = requests.get("https://v4.ifconfig.co/json").json()["ip"]
 # c.JupyterHub.allow_named_servers = False
 c.JupyterHub.allow_named_servers = True
 
+# Additional config if notebooks should be cloned to a user's named server
+#c.JupyterHub.default_server_name = 'test'
+
 ## Whether to shutdown single-user servers when the Hub shuts down.
 #
 #  Disable if you want to be able to teardown the Hub while leaving the single-

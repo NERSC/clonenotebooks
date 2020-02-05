@@ -17,3 +17,7 @@ c.JupyterHub.hub_ip = "0.0.0.0"
 c.Spawner.default_url = "/lab"
 # also advice here: https://github.com/jupyterhub/jupyterlab-hub
 c.Spawner.cmd = ["jupyter-labhub"]
+
+# Additional config if you want notebooks cloned to a user's named server by default
+#c.JupyterHub.allow_named_servers=True
+#c.JupyterHub.default_server_name='test'
