@@ -76,7 +76,7 @@
               </a>
             {% endif %}
             {% if clone_notebooks and entry.url and entry.class == 'fa-book' %}
-              <a class="dirview-clone-btn" target="JupyterLab" role="button" href="{{ from_base(entry.url) }}?clone">
+              <a class="dirview-clone-btn" target="JupyterLab" role="button" href="{{ from_base(entry.url) }}?clone&flush_cache=False">
 		      <button class="clone-btn btn btn-default" type="button">Clone into home directory</button>
 	      </a>
             {% endif %}

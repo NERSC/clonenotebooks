@@ -33,7 +33,7 @@
     {% if clone_notebooks and len(entry.notebooks) == 1  %}
     {% set notebook = entry.notebooks[0] %}
     <td>
-    <a class="dirview-clone-btn" target="JupyterLab" role="button" href='{{ from_base(entry.id, notebook) }}?clone'>
+    <a class="dirview-clone-btn" target="JupyterLab" role="button" href='{{ from_base(entry.id, notebook) }}?clone&flush_cache=False'>
 	    <button class="clone-btn btn btn-default" type="button">Clone into home directory</button>
     </a>
     </td>
