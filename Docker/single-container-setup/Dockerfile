@@ -65,7 +65,7 @@ RUN \
 #
 # Install nbviewer
 #
-    git clone --single-branch --branch step7 https://github.com/krinsman/nbviewer.git /repos/nbviewer	    &&  \
+    git clone --single-branch --branch develop https://github.com/krinsman/nbviewer.git /repos/nbviewer	    &&  \
     cd /repos/nbviewer								    			    &&  \
 # --no-dependencies flag because we don't actually need pylibmc or elasticsearch to run this (without
 # elasticsearch or memcached) and everything else in requirements.txt is already installed
