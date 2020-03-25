@@ -1,15 +1,14 @@
 This was built starting from
-[Daniel Allan's notebook clone extension](https://github.com/danielballan/notebook-clone-extension) as a basis. It currently
-requires branch `step7` of [my fork of NBViewer](https://github.com/krinsman/nbviewer) in order to run.
+[Daniel Allan's notebook clone extension](https://github.com/danielballan/notebook-clone-extension) as a basis.
 
 ## Installation Instructions
 
 The easiest and quickest way to get a version of this up and running
-to test out would be to use the Docker image and setup instructions included in the [`Docker` subfolder of this repository](https://github.com/krinsman/clonenotebooks/tree/master/Docker).
+to test out would be to use the Docker image and setup instructions included in the [`Docker` subfolder of this repository](https://github.com/NERSC/clonenotebooks/tree/master/Docker).
 
-Otherwise install branch `step7` of [my fork of NBViewer](https://github.com/krinsman/nbviewer) using the same installation
-instructions as for the Jupyter master branch, in particular the setup
-instructions for using NBViewer as a JupyterHub service. Then download this repository,
+### Local install
+
+Follow the instructions for using NBViewer as a JupyterHub service. Then download this repository,
 and in the folder run (the dot is important, it means "present working
 directory"):
 
@@ -33,10 +32,7 @@ to the command for NBViewer in your `jupyterhub_config.py` file
 
     --template-path=/your/preferred/location
 
-Then make sure to include an `nbviewer_config.py` file (this is a major why
-for now using
-[my fork of NBViewer](https://github.com/krinsman/nbviewer) is
-necessary) with the lines:
+Then make sure to include an `nbviewer_config.py` file with the lines:
 
     c.NBViewer.handler_settings    = {'clone_notebooks' : True}
     
@@ -57,14 +53,14 @@ One can include `{username}` as a stand-in for the JupyterHub user's name, analo
 
 will cause notebooks to be cloned into `/jupyter/users/f/foo` for user `foo` and `/jupyter/users/b/bar` for user `bar` if the value of `c.Spawner.notebook_dir` is `'/jupyter'`, and will cause notebooks to be cloned into `/users/f/foo` for user `foo` and `/users/b/bar` for user `bar` if the value of `c.Spawner.notebook_dir` is `'/'`. In particular, the destination where notebooks is cloned will **always** be relative to the contents manager's root directory (which will usually equal the value of `c.Spawner.notebook_dir`).
 
-An example copy of `nbviewer_config.py` is also included in this repository, in the [`Docker` subfolder](https://github.com/krinsman/clonenotebooks/tree/master/Docker). Ideally this
+An example copy of `nbviewer_config.py` is also included in this repository, in the [`Docker` subfolder](https://github.com/NERSC/clonenotebooks/tree/master/Docker). Ideally this
 should have everything configured, but admittedly these setup instructions are more
 vague than they could be and might not have suggested an important step. 
 
-I recommend comparing with the Dockerfiles in the [`Docker` subfolder of this repository](https://github.com/krinsman/clonenotebooks/tree/master/Docker) for an example setup
+I recommend comparing with the Dockerfiles in the [`Docker` subfolder of this repository](https://github.com/NERSC/clonenotebooks/tree/master/Docker) for an example setup
 if any difficulties arise. Please give any and all feedback about any ways in
 which the documentation could be improved, since it will be much
-appreciated. [Here is a link to the issues page](https://github.com/krinsman/clonenotebooks/issues)
+appreciated. [Here is a link to the issues page](https://github.com/NERSC/clonenotebooks/issues)
 for requests for improved documentation and/or general feedback.
 
 ## Kernelspec Cloning

@@ -65,7 +65,7 @@ RUN \
 #
 # Install nbviewer
 #
-    git clone --single-branch --branch develop https://github.com/krinsman/nbviewer.git /repos/nbviewer	    &&  \
+    git clone --single-branch --branch master https://github.com/jupyter/nbviewer.git /repos/nbviewer	    &&  \
     cd /repos/nbviewer								    			    &&  \
 # --no-dependencies flag because we don't actually need pylibmc or elasticsearch to run this (without
 # elasticsearch or memcached) and everything else in requirements.txt is already installed
@@ -74,7 +74,7 @@ RUN \
     invoke bower							    				    &&  \
     invoke less												    &&  \							    
 # Install notebook cloning extension
-    git clone https://github.com/krinsman/clonenotebooks.git /repos/clonenotebooks			    &&  \
+    git clone https://github.com/NERSC/clonenotebooks.git /repos/clonenotebooks			    &&  \
     cd /repos/clonenotebooks									            &&  \
     pip install -e . --no-cache-dir									    &&  \
     jupyter serverextension enable clonenotebooks.cloners --sys-prefix				            &&  \
