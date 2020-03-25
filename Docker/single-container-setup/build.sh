@@ -2,5 +2,5 @@
 
 docker build    \
     --no-cache  \
-    --tag clonenotebooks:single-container-setup . \
+    --tag clonenotebooks/single-container-setup . \
     --force-rm
