@@ -1,9 +1,11 @@
 # Configuration file for jupyterhub.
 
 import os
+import socket
 import requests
 
-ip = requests.get("https://v4.ifconfig.co/json").json()["ip"]
+#ip = requests.get("https://v4.ifconfig.co/json").json()["ip"]
+ip = socket.gethostname()
 
 ## Allow named single-user servers per user
 # c.JupyterHub.allow_named_servers = False
