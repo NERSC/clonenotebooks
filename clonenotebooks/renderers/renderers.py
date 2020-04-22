@@ -21,7 +21,7 @@ from ..utils import cached_property
 
 class CloneRendererMixin(HubAuthenticated):
     # stale username info is appearing in the render template, disabling for testing
-    #@cached_property
+    @property
     def username(self):
         current_user = self.get_current_user()
         return current_user["name"]
