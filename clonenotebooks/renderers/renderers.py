@@ -20,12 +20,13 @@ from ..utils import cached_property
 
 
 class CloneRendererMixin(HubAuthenticated):
-    @cached_property
+    # stale username info is appearing in the render template, disabling for testing
+    @property
     def username(self):
         current_user = self.get_current_user()
         return current_user["name"]
 
-    @cached_property
+    @property
     def clone_to(self):
         # A string determined by user's config settings, possibly including {username} as a standin
         # Analogous to c.Spawner.notebook_dir and c.Spawner.default_url config in JupyterHub
@@ -53,7 +54,7 @@ class CloneRendererMixin(HubAuthenticated):
 
     # Here `self` will come from BaseHandler in nbviewer.providers.base (from which the other NBViewer handlers inherit)
     # Contains values to be unpacked into Jinja2 namespace for renderers to render the custom templates in this package
-    @cached_property
+    @property
     def CLONENOTEBOOKS_NAMESPACE(self):
         return {
             "clone_notebooks": getattr(self, "clone_notebooks", False),
