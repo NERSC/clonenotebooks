@@ -87,7 +87,7 @@ class URLRenderingHandler(CloneRendererMixin, URLHandler):
             **namespace
         )
 
-    @cached
+    # @cached
     async def get(self, secure, netloc, url):
 
         remote_url, public = await super().get_notebook_data(secure, netloc, url)
@@ -125,7 +125,7 @@ class GitHubBlobRenderingHandler(CloneRendererMixin, GitHubBlobHandler):
             **namespace
         )
 
-    @cached
+    # @cached
     async def get(self, user, repo, ref, path):
         raw_url, blob_url, tree_entry = await super().get_notebook_data(
             user, repo, ref, path
@@ -232,7 +232,7 @@ class LocalRenderingHandler(CloneRendererMixin, LocalFileHandler):
             entries, breadcrumbs, title, **self.CLONENOTEBOOKS_NAMESPACE, **namespace
         )
 
-    @cached
+    # @cached
     async def get(self, path):
         fullpath = await super().get_notebook_data(path)
 
