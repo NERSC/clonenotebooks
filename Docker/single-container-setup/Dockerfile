@@ -23,7 +23,6 @@ RUN \
     libffi-dev						\
     lsb-release						\
     tzdata						\
-    wget					        \
     vim                                                 \
     git						        \
     gcc						        \
@@ -37,7 +36,7 @@ RUN \
 #
 # Install Miniconda
 #
-    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh    &&  \
+    curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o Miniconda3-latest-Linux-x86_64.sh    && \
     bash Miniconda3-latest-Linux-x86_64.sh -f -b -p /opt/conda							      &&  \
     echo "python 3.7.*" >> /opt/conda/conda-meta/pinned					      	      &&  \
     conda config --add channels conda-forge							      &&  \
